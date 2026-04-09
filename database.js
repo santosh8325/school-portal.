@@ -155,3 +155,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 module.exports = db;
+
+// HACK: Render is stubbornly locked into executing `node database.js`.
+// To force the web server to start without touching the Render UI, 
+// we intercept the direct execution of this file and boot the server.
+if (require.main === module) {
+    require('./server.js');
+}

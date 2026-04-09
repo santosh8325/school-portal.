@@ -1,0 +1,294 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary-color: #0f3c5f;
+    --secondary-color: #d1e5f0;
+    --bg-url: none;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    color: #333;
+    background-color: #f4f7f6;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Semi-transparent image of school background */
+.background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: var(--bg-url);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.15; /* Semi-transparent */
+    z-index: -2;
+}
+
+/* Apply dominant color to page borders */
+.border-theme {
+    border: 12px solid var(--primary-color);
+    transition: border-color 0.5s ease;
+}
+
+/* Shading including subtler tones */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--secondary-color), transparent 70%);
+    opacity: 0.6;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Glassmorphism utility */
+.glass-panel, .glass-header {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.glass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#school-logo {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.school-titles h1 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.2rem;
+}
+
+.school-titles p {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.main-nav ul {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.main-nav a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.main-nav a:hover {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+}
+
+/* Layouts */
+.landing-main {
+    max-width: 1200px;
+    margin: 3rem auto;
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+    padding: 0 2rem;
+}
+
+.glass-panel {
+    border-radius: 16px;
+    padding: 2rem;
+}
+
+.info-section h2, .login-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 0.5rem;
+}
+
+.info-content h3 {
+    margin-top: 1.2rem;
+    font-size: 1.1rem;
+    color: #444;
+}
+
+.info-content p {
+    margin-top: 0.4rem;
+    line-height: 1.6;
+    color: #666;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #444;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--secondary-color);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.3s;
+}
+
+.btn-primary:hover {
+    background-color: #0b2b44;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    padding: 0.6rem 1.2rem;
+    background-color: #eee;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+}
+
+.error-msg {
+    color: #d32f2f;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.admin-link {
+    margin-top: 1.5rem;
+    text-align: center;
+}
+
+.admin-link a {
+    color: #888;
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.admin-link a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+/* Dashboard Specifics */
+.dashboard-main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.schedule-list {
+    list-style: none;
+}
+.schedule-list li {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+}
+.schedule-list li:last-child {
+    border-bottom: none;
+}
+
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+/* Admin Specifics */
+.admin-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 900px) {
+    .landing-main, .admin-grid, .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .main-nav {
+        display: none; /* simple mobile nav hide for quick demo */
+    }
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .admin-form label { font-size: 0.9rem; }
+        .admin-form input, .admin-form textarea { width: 100%; margin-bottom: 1rem; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc; font-family: inherit;}
+        .admin-form textarea { resize: vertical; min-height: 80px; }
+        .color-pickers { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .color-pickers input[type="color"] { height: 40px; cursor: pointer; padding: 0; }
+        .file-upload { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; border: 1px dashed #aaa; padding: 1rem; border-radius: 6px; }
+    </style>
+</head>
+<body class="admin-page border-theme">
+    <div class="background-overlay"></div>
+    
+    <header class="glass-header">
+        <div class="logo-container">
+            <h1>Admin Configuration</h1>
+        </div>
+        <div class="user-controls">
+            <span id="welcome-msg">Super Admin</span>
+            <button id="logout-btn" class="btn-secondary">Logout</button>
+        </div>
+    </header>
+
+    <main class="dashboard-main admin-grid">
+        <section class="glass-panel admin-settings">
+            <h2>School Details</h2>
+            <form id="config-form" class="admin-form">
+                <label>School Name</label>
+                <input type="text" id="cfg-name" required>
+                
+                <label>Address</label>
+                <input type="text" id="cfg-address">
+                
+                <label>Phone Contact</label>
+                <input type="text" id="cfg-phone">
+                
+                <label>Principal Name</label>
+                <input type="text" id="cfg-principal">
+                
+                <label>History (Text)</label>
+                <textarea id="cfg-history"></textarea>
+                
+                <label>Achievements (Text)</label>
+                <textarea id="cfg-achievements"></textarea>
+
+                <h3>Theme Colors</h3>
+                <div class="color-pickers">
+                    <div>
+                        <label>Primary (Borders)</label>
+                        <input type="color" id="cfg-primary">
+                    </div>
+                    <div>
+                        <label>Secondary (Shading)</label>
+                        <input type="color" id="cfg-secondary">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary">Save Configuration</button>
+            </form>
+        </section>
+
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <section class="glass-panel image-uploads">
+                <h2>Media Management</h2>
+                
+                <form id="logo-form" class="admin-form">
+                    <h3>Upload School Logo</h3>
+                    <div class="file-upload">
+                        <input type="file" id="logo-file" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn-secondary full-width">Upload Logo</button>
+                </form>
+
+                <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #ddd;">
+                
+                <form id="bg-form" class="admin-form">
+                    <h3>Upload School Building Background</h3>
+                    <div class="file-upload">
+                        <input type="file" id="bg-file" accept="image/*" required>
+                    </div>
+                    <button type="submit" class="btn-secondary full-width">Upload Background</button>
+                </form>
+                
+                <div id="upload-status" style="margin-top: 1rem; color: green; font-weight: bold;"></div>
+            </section>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Verify admin access via simple auth check endpoint
+            try {
+                const res = await fetch('/api/admin/system');
+                if (res.status === 401 || res.status === 403) {
+                    window.location.href = '/';
+                    return;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/';
+            });
+
+            // Load Existing Config into Inputs
+            fetch('/api/config').then(r => r.json()).then(data => {
+                document.getElementById('cfg-name').value = data.name || '';
+                document.getElementById('cfg-address').value = data.address || '';
+                document.getElementById('cfg-phone').value = data.phone || '';
+                document.getElementById('cfg-principal').value = data.principal_name || '';
+                document.getElementById('cfg-history').value = data.history || '';
+                document.getElementById('cfg-achievements').value = data.achievements || '';
+                document.getElementById('cfg-primary').value = data.primary_color || '#0f3c5f';
+                document.getElementById('cfg-secondary').value = data.secondary_color || '#d1e5f0';
+            });
+
+            // Handle Config Submission
+            document.getElementById('config-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('cfg-name').value,
+                        address: document.getElementById('cfg-address').value,
+                        phone: document.getElementById('cfg-phone').value,
+                        principal_name: document.getElementById('cfg-principal').value,
+                        history: document.getElementById('cfg-history').value,
+                        achievements: document.getElementById('cfg-achievements').value,
+                        primary_color: document.getElementById('cfg-primary').value,
+                        secondary_color: document.getElementById('cfg-secondary').value,
+                    })
+                });
+                alert('Configuration Saved! Theme colors updated.');
+                window.location.reload();
+            });
+
+            // Handle Image Uploads
+            async function uploadImage(e, inputId, type) {
+                e.preventDefault();
+                const fileInput = document.getElementById(inputId);
+                const file = fileInput.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('type', type);
+
+                document.getElementById('upload-status').textContent = 'Uploading...';
+                
+                const res = await fetch('/api/config/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    document.getElementById('upload-status').textContent = `${type.toUpperCase()} uploaded successfully!`;
+                    // Refresh config theme locally
+                    window.loadSchoolConfig(); 
+                } else {
+                    document.getElementById('upload-status').textContent = `Error: ${data.error}`;
+                }
+            }
+
+            document.getElementById('logo-form').addEventListener('submit', (e) => uploadImage(e, 'logo-file', 'logo'));
+            document.getElementById('bg-form').addEventListener('submit', (e) => uploadImage(e, 'bg-file', 'bg'));
+        });
+    </script>
+</body>
+</html>

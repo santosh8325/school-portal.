@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Portal</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="landing-page border-theme">
+    <div class="background-overlay"></div>
+    
+    <header class="glass-header">
+        <div class="logo-container">
+            <img src="" alt="School Logo" id="school-logo">
+            <div class="school-titles">
+                <h1 id="school-name">School Portal</h1>
+                <p id="school-address">Loading...</p>
+            </div>
+        </div>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#communication">Communication</a></li>
+                <li><a href="#schedule">Schedule a Meeting</a></li>
+                <li><a href="#report">Report</a></li>
+                <li><a href="#class-summary">Class Summary</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="landing-main">
+        <section class="info-section glass-panel">
+            <h2>Welcome to our portal</h2>
+            <div class="info-content">
+                <h3>Our History</h3>
+                <p id="school-history">Loading history...</p>
+                <h3>Recent Achievements</h3>
+                <p id="school-achievements">Loading achievements...</p>
+                <h3>Principal</h3>
+                <p id="school-principal">Loading...</p>
+                <h3>Contact</h3>
+                <p id="school-phone">Loading...</p>
+            </div>
+        </section>
+
+        <section class="login-section glass-panel">
+            <h2>Student Portal Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Roll Number / Username</label>
+                    <input type="text" id="username" name="username" required placeholder="Enter roll number">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn-primary">Login to Dashboard</button>
+                <div id="login-error" class="error-msg"></div>
+            </form>
+            <div class="admin-link">
+                <a href="#admin-modal" id="open-admin-login">Admin Login</a>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

@@ -14,9 +14,15 @@ const PORT = process.env.PORT || 3000;
 // Middleware configuration
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Strictly serve static files from public
-app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Aggressive Cache-Control headers applied to statically served assets
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: '7d', // Maximum cache duration
+    setHeaders: (res, path) => {
+        // We ensure the Service Worker is never statically cached so we can push updates
+        if (path.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache');
+    }
+}));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '30d' }));
 
 // Ensure uploads folder exists
 if (!fs.existsSync(path.join(__dirname, 'uploads'))) {

@@ -36,6 +36,17 @@ async function loadSchoolConfig() {
     }
 }
 
+// Register Service Worker for aggressive offline caching
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            console.log('ServiceWorker registered successfully. Static content will now be cached on device.');
+        }).catch(err => {
+            console.warn('ServiceWorker registration failed: ', err);
+        });
+    });
+}
+
 // Make loadSchoolConfig globally available 
 window.loadSchoolConfig = loadSchoolConfig;
 

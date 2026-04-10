@@ -1,15 +1,15 @@
 :root {
-    --primary-color: #0f3c5f;
-    --secondary-color: #d1e5f0;
-    --accent-color: #3498db;
-    --text-main: #333;
+    --primary-color: #e53935;
+    --secondary-color: #fffdd0;
+    --accent-color: #d4af37;
+    --text-main: #222;
     --text-light: #666;
-    --bg-color: #f4f7f6;
+    --bg-color: #ffffff;
     --white: #ffffff;
     --error: #e74c3c;
     --success: #2ecc71;
-    --panel-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.4);
+    --panel-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.1);
 }
 
 * {
@@ -32,7 +32,12 @@ body {
 
 /* Login Specific */
 .login-bg {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+    background: var(--bg-color);
+    background-image: radial-gradient(var(--secondary-color) 20%, transparent 20%),
+                      radial-gradient(var(--secondary-color) 20%, transparent 20%);
+    background-color: var(--bg-color);
+    background-position: 0 0, 10px 10px;
+    background-size: 20px 20px;
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -152,12 +157,12 @@ body {
 
 .briefing-pane {
     width: 320px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #0d324d 100%);
+    background: #222222;
     color: var(--white);
     padding: 30px;
     display: flex;
     flex-direction: column;
-    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+    border-right: 4px solid var(--primary-color);
     z-index: 10;
 }
 

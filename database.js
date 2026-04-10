@@ -19,7 +19,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 email TEXT,
                 role TEXT,
                 class_name TEXT,
-                parent_id INTEGER
+                parent_id INTEGER,
+                status TEXT DEFAULT 'Active',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`, (err) => {
                 if (err) console.error(err);
                 
@@ -147,6 +149,83 @@ const db = new sqlite3.Database(dbPath, (err) => {
                         (id, name, address, phone, history, achievements, principal_name, logo_url, bg_url, primary_color, secondary_color) 
                         VALUES (1, 'Acme Global School', '123 Education Lane, Knowledge City', '+1 800 555 0199', 'Founded in 1999 to nurture young minds.', 'Ranked #1 in District 2025', 'Dr. Eleanor Vance', '/uploads/default-logo.png', '/uploads/default-bg.jpg', '#0f3c5f', '#d1e5f0')`);
                         console.log("Default school config seeded.");
+                    }
+                });
+            });
+
+            // Cross-Class Requests table
+            db.run(`CREATE TABLE IF NOT EXISTS cross_class_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                teacher_id INTEGER,
+                requested_class TEXT,
+                status TEXT DEFAULT 'Pending Principal & Class-In-Charge Approval',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(teacher_id) REFERENCES users(id)
+            )`);
+            // Relieving Requests table
+            db.run(`CREATE TABLE IF NOT EXISTS relieving_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER,
+                teacher_id INTEGER,
+                draft_text TEXT,
+                status TEXT DEFAULT 'Pending Principal Approval',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(student_id) REFERENCES users(id),
+                FOREIGN KEY(teacher_id) REFERENCES users(id)
+            )`);
+
+            // PTM Bookings table
+            db.run(`CREATE TABLE IF NOT EXISTS ptm_bookings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parent_id INTEGER,
+                teacher_id INTEGER,
+                booking_date DATE,
+                booking_time TEXT,
+                status TEXT DEFAULT 'Scheduled',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(parent_id) REFERENCES users(id),
+                FOREIGN KEY(teacher_id) REFERENCES users(id)
+            )`);
+
+            // PTM Conversations (Data Silo) table
+            db.run(`CREATE TABLE IF NOT EXISTS ptm_conversations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                booking_id INTEGER,
+                sender_id INTEGER,
+                message TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(booking_id) REFERENCES ptm_bookings(id),
+                FOREIGN KEY(sender_id) REFERENCES users(id)
+            )`);
+
+            // Student Notes table
+            db.run(`CREATE TABLE IF NOT EXISTS student_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER,
+                date DATE,
+                note_content TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(student_id) REFERENCES users(id)
+            )`);
+
+            // Tutors table
+            db.run(`CREATE TABLE IF NOT EXISTS tutors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                subject TEXT,
+                budget TEXT,
+                lat REAL,
+                lng REAL,
+                verified BOOLEAN DEFAULT 1
+            )`, (err) => {
+                if (err) console.error(err);
+                
+                // Seed some tutors
+                db.get("SELECT * FROM tutors", (err, row) => {
+                    if (!row) {
+                        db.run("INSERT INTO tutors (name, subject, budget, lat, lng, verified) VALUES ('Mr. Smith', 'Mathematics', '$30/hr', 40.7128, -74.0060, 1)");
+                        db.run("INSERT INTO tutors (name, subject, budget, lat, lng, verified) VALUES ('Ms. Davis', 'Science', '$25/hr', 40.7138, -74.0050, 1)");
+                        db.run("INSERT INTO tutors (name, subject, budget, lat, lng, verified) VALUES ('Dr. Brown', 'History', '$40/hr', 40.7148, -74.0070, 1)");
                     }
                 });
             });

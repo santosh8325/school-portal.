@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (res.ok) {
                     currentTempId = data.tempId;
+                    if (data.demoOtp) {
+                        alert("IN-APP OTP GENERATED (Demo): " + data.demoOtp);
+                    }
                     // Transition effect
                     document.getElementById('login-form-wrapper').style.opacity = 0;
                     setTimeout(() => {

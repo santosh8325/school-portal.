@@ -27,10 +27,56 @@
         </div>
     </header>
 
-    <main class="dashboard-main admin-grid">
+    <main class="dashboard-main" style="display:flex; flex-direction:column; gap:20px;">
+        <!-- NEW: Dashboard stats/schools list -->
+        <section class="glass-panel" style="grid-column: 1 / -1;">
+            <h2>SaaS Fleet: Active Schools</h2>
+            <table class="data-table" id="schools-table" style="width:100%; text-align:left; margin-bottom:20px;">
+                <thead><tr><th>School ID</th><th>School Name</th><th>Head Principal</th></tr></thead>
+                <tbody><tr><td colspan="3">Loading...</td></tr></tbody>
+            </table>
+            
+            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                <!-- Provision School -->
+                <div style="flex:1; min-width:300px;">
+                    <h3>Provision New School</h3>
+                    <form id="create-school-form" class="admin-form mt-10">
+                        <label>School Name</label>
+                        <input type="text" id="cs-name" required>
+                        <label>Address</label>
+                        <input type="text" id="cs-address">
+                        <label>Contact Phone</label>
+                        <input type="text" id="cs-phone">
+                        <button type="submit" class="btn-primary">Generate School Instance</button>
+                        <p id="cs-msg" style="color:var(--primary-color); font-weight:bold;"></p>
+                    </form>
+                </div>
+                
+                <!-- Provision Principal -->
+                <div style="flex:1; min-width:300px;">
+                    <h3>Assign Principal to School</h3>
+                    <form id="create-principal-form" class="admin-form mt-10">
+                        <label>Target School</label>
+                        <select id="cp-school" required style="width:100%; margin-bottom:1rem; padding:0.5rem; border-radius:4px;"></select>
+                        <label>Principal Username</label>
+                        <input type="text" id="cp-user" required>
+                        <label>Password</label>
+                        <input type="text" id="cp-pass" required>
+                        <label>Email Address</label>
+                        <input type="email" id="cp-email" required>
+                        <button type="submit" class="btn-primary">Create Principal Account</button>
+                        <p id="cp-msg" style="color:var(--primary-color); font-weight:bold;"></p>
+                    </form>
+                </div>
+            </div>
+        </section>
+
         <section class="glass-panel admin-settings">
-            <h2>School Details</h2>
+            <h2>School Configurations (Overrides)</h2>
             <form id="config-form" class="admin-form">
+                <label>Select Target School</label>
+                <select id="config-school" required style="width:100%; margin-bottom:1rem; padding:0.5rem; border-radius:4px;"></select>
+
                 <label>School Name</label>
                 <input type="text" id="cfg-name" required>
                 
@@ -40,7 +86,7 @@
                 <label>Phone Contact</label>
                 <input type="text" id="cfg-phone">
                 
-                <label>Principal Name</label>
+                <label>Principal Name (Display Only)</label>
                 <input type="text" id="cfg-principal">
                 
                 <label>History (Text)</label>
@@ -61,76 +107,103 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn-primary">Save Configuration</button>
+                <button type="submit" class="btn-primary">Save Configuration Override</button>
             </form>
         </section>
 
-        <div style="display: flex; flex-direction: column; gap: 2rem;">
-            <section class="glass-panel image-uploads">
-                <h2>Media Management</h2>
-                
-                <form id="logo-form" class="admin-form">
-                    <h3>Upload School Logo</h3>
-                    <div class="file-upload">
-                        <input type="file" id="logo-file" accept="image/*" required>
-                    </div>
-                    <button type="submit" class="btn-secondary full-width">Upload Logo</button>
-                </form>
+        <section class="glass-panel image-uploads">
+            <h2>Media Management Override</h2>
+            <div style="margin-bottom:1rem;">
+                <label>Select Target School for Upload:</label>
+                <select id="upload-school" style="width:100%; padding:0.5rem; border-radius:4px;"></select>
+            </div>
+            
+            <form id="logo-form" class="admin-form">
+                <h3>Upload School Logo</h3>
+                <div class="file-upload">
+                    <input type="file" id="logo-file" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn-secondary full-width">Upload Logo</button>
+            </form>
 
-                <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #ddd;">
-                
-                <form id="bg-form" class="admin-form">
-                    <h3>Upload School Building Background</h3>
-                    <div class="file-upload">
-                        <input type="file" id="bg-file" accept="image/*" required>
-                    </div>
-                    <button type="submit" class="btn-secondary full-width">Upload Background</button>
-                </form>
-                
-                <div id="upload-status" style="margin-top: 1rem; color: green; font-weight: bold;"></div>
-            </section>
-
-        </div>
+            <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid #ddd;">
+            
+            <form id="bg-form" class="admin-form">
+                <h3>Upload School Building Background</h3>
+                <div class="file-upload">
+                    <input type="file" id="bg-file" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn-secondary full-width">Upload Background</button>
+            </form>
+            
+            <div id="upload-status" style="margin-top: 1rem; color: green; font-weight: bold;"></div>
+        </section>
     </main>
 
     <script src="/js/main.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Verify admin access via simple auth check endpoint
             try {
                 const res = await fetch('/api/admin/system');
                 if (res.status === 401 || res.status === 403) {
                     window.location.href = '/';
                     return;
                 }
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { }
 
             document.getElementById('logout-btn').addEventListener('click', async () => {
                 await fetch('/api/auth/logout', { method: 'POST' });
                 window.location.href = '/';
             });
 
-            // Load Existing Config into Inputs
-            fetch('/api/config').then(r => r.json()).then(data => {
-                document.getElementById('cfg-name').value = data.name || '';
-                document.getElementById('cfg-address').value = data.address || '';
-                document.getElementById('cfg-phone').value = data.phone || '';
-                document.getElementById('cfg-principal').value = data.principal_name || '';
-                document.getElementById('cfg-history').value = data.history || '';
-                document.getElementById('cfg-achievements').value = data.achievements || '';
-                document.getElementById('cfg-primary').value = data.primary_color || '#0f3c5f';
-                document.getElementById('cfg-secondary').value = data.secondary_color || '#d1e5f0';
+            async function refreshSchools() {
+                const res = await fetch('/api/admin/schools');
+                const schools = await res.json();
+                
+                const table = document.querySelector('#schools-table tbody');
+                table.innerHTML = schools.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.principal_name || 'Unassigned'}</td></tr>`).join('');
+                
+                const dropdowns = [document.getElementById('cp-school'), document.getElementById('config-school'), document.getElementById('upload-school')];
+                const options = '<option value="">Select School...</option>' + schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                dropdowns.forEach(d => { if(d) d.innerHTML = options; });
+            }
+
+            refreshSchools();
+
+            document.getElementById('create-school-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    name: document.getElementById('cs-name').value,
+                    address: document.getElementById('cs-address').value,
+                    phone: document.getElementById('cs-phone').value
+                };
+                const res = await fetch('/api/admin/schools', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await res.json();
+                document.getElementById('cs-msg').textContent = data.message || data.error;
+                if(res.ok) { document.getElementById('create-school-form').reset(); refreshSchools(); }
             });
 
-            // Handle Config Submission
+            document.getElementById('create-principal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    schoolId: document.getElementById('cp-school').value,
+                    username: document.getElementById('cp-user').value,
+                    password: document.getElementById('cp-pass').value,
+                    email: document.getElementById('cp-email').value
+                };
+                const res = await fetch('/api/admin/principals', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await res.json();
+                document.getElementById('cp-msg').textContent = data.message || data.error;
+                if(res.ok) { document.getElementById('create-principal-form').reset(); refreshSchools(); }
+            });
+
             document.getElementById('config-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 await fetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        schoolId: document.getElementById('config-school').value,
                         name: document.getElementById('cfg-name').value,
                         address: document.getElementById('cfg-address').value,
                         phone: document.getElementById('cfg-phone').value,
@@ -141,36 +214,28 @@
                         secondary_color: document.getElementById('cfg-secondary').value,
                     })
                 });
-                alert('Configuration Saved! Theme colors updated.');
-                window.location.reload();
+                alert('Configuration Saved!');
+                refreshSchools();
             });
 
-            // Handle Image Uploads
             async function uploadImage(e, inputId, type) {
                 e.preventDefault();
-                const fileInput = document.getElementById(inputId);
-                const file = fileInput.files[0];
-                if (!file) return;
+                const file = document.getElementById(inputId).files[0];
+                const schoolId = document.getElementById('upload-school').value;
+                if (!file || !schoolId) { alert('Select school and file'); return; }
 
                 const formData = new FormData();
                 formData.append('image', file);
                 formData.append('type', type);
+                formData.append('schoolId', schoolId);
 
                 document.getElementById('upload-status').textContent = 'Uploading...';
                 
-                const res = await fetch('/api/config/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                const res = await fetch('/api/config/upload', { method: 'POST', body: formData });
                 const data = await res.json();
                 
-                if (res.ok) {
-                    document.getElementById('upload-status').textContent = `${type.toUpperCase()} uploaded successfully!`;
-                    // Refresh config theme locally
-                    window.loadSchoolConfig(); 
-                } else {
-                    document.getElementById('upload-status').textContent = `Error: ${data.error}`;
-                }
+                if (res.ok) document.getElementById('upload-status').textContent = `${type.toUpperCase()} uploaded successfully!`;
+                else document.getElementById('upload-status').textContent = `Error: ${data.error}`;
             }
 
             document.getElementById('logo-form').addEventListener('submit', (e) => uploadImage(e, 'logo-file', 'logo'));

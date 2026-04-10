@@ -74,38 +74,75 @@ const upload = multer({ storage: storage });
 
 // API: Setup School Configuration
 app.get('/api/config', (req, res) => {
-    db.get("SELECT * FROM school_config WHERE id = 1", (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row);
-    });
+    if (req.session.userId && req.session.schoolId) {
+        db.get("SELECT * FROM schools WHERE id = ?", [req.session.schoolId], (err, row) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(row || {});
+        });
+    } else {
+        res.json({
+            name: "EduPortal Multi-Tenant System",
+            address: "SaaS Enterprise Network",
+            phone: "Centralized Database",
+            history: "Log in with your credentials. Your specific school dashboard will automatically mount.",
+            achievements: "Powering unlimited schools instantly.",
+            principal_name: "Super Administrator",
+            primary_color: "#1a252f",
+            secondary_color: "#34495e"
+        });
+    }
 });
 
 app.post('/api/config', requireAuth(['admin']), (req, res) => {
-    const { name, address, phone, history, achievements, principal_name, primary_color, secondary_color } = req.body;
+    const { schoolId, name, address, phone, history, achievements, principal_name, primary_color, secondary_color } = req.body;
     db.run(
-        `UPDATE school_config SET name = ?, address = ?, phone = ?, history = ?, achievements = ?, principal_name = ?, primary_color = ?, secondary_color = ? WHERE id = 1`,
-        [name, address, phone, history, achievements, principal_name, primary_color, secondary_color],
+        `UPDATE schools SET name = ?, address = ?, phone = ?, history = ?, achievements = ?, principal_name = ?, primary_color = ?, secondary_color = ? WHERE id = ?`,
+        [name, address, phone, history, achievements, principal_name, primary_color, secondary_color, schoolId],
         function(err) {
             if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Configuration updated successfully' });
+            res.json({ message: 'Configuration updated successfully for School ID ' + schoolId });
         }
     );
+});
+
+app.get('/api/admin/schools', requireAuth(['admin']), (req, res) => {
+    db.all("SELECT * FROM schools", (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/admin/schools', requireAuth(['admin']), (req, res) => {
+    const { name, address, phone } = req.body;
+    db.run("INSERT INTO schools (name, address, phone) VALUES (?, ?, ?)", [name, address, phone], function(err) {
+        if(err) return res.status(500).json({error: err.message});
+        res.json({ message: 'School created successfully', schoolId: this.lastID });
+    });
+});
+
+app.post('/api/admin/principals', requireAuth(['admin']), (req, res) => {
+    const { schoolId, username, password, email } = req.body;
+    const hash = bcrypt.hashSync(password, 10);
+    db.run("INSERT INTO users (username, password, email, role, school_id) VALUES (?, ?, ?, 'principal', ?)", [username, hash, email, schoolId], function(err) {
+        if(err) return res.status(500).json({error: err.message});
+        res.json({ message: 'Principal successfully created and assigned to School.' });
+    });
 });
 
 // Admin Image Uploads
 app.post('/api/config/upload', requireAuth(['admin']), upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    
-    const imageType = req.body.type; // 'logo' or 'bg'
+    const imageType = req.body.type;
+    const schoolId = req.body.schoolId;
     const filePath = '/uploads/' + req.file.filename;
 
     if (imageType === 'logo') {
-        db.run(`UPDATE school_config SET logo_url = ? WHERE id = 1`, [filePath], (err) => {
+        db.run(`UPDATE schools SET logo_url = ? WHERE id = ?`, [filePath, schoolId], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ url: filePath });
         });
     } else if (imageType === 'bg') {
-        db.run(`UPDATE school_config SET bg_url = ? WHERE id = 1`, [filePath], (err) => {
+        db.run(`UPDATE schools SET bg_url = ? WHERE id = ?`, [filePath, schoolId], (err) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ url: filePath });
         });
@@ -171,6 +208,7 @@ app.post('/api/auth/verify-otp', (req, res) => {
         req.session.username = user.username;
         req.session.role = user.role;
         req.session.className = user.class_name;
+        req.session.schoolId = user.school_id;
         
         db.run("INSERT INTO activity_logs (user_id, action, module, details) VALUES (?, ?, ?, ?)", [user.id, 'LOGIN', 'auth', 'Successful login with OTP']);
         
@@ -530,14 +568,14 @@ app.post('/api/relieve/teacher', requireAuth(['principal']), (req, res) => {
 });
 
 app.get('/api/principal/teachers-list', requireAuth(['principal']), (req, res) => {
-    db.all("SELECT id, username, class_name FROM users WHERE role = 'teacher' AND status = 'Active'", (err, rows) => {
+    db.all("SELECT id, username, class_name FROM users WHERE role = 'teacher' AND status = 'Active' AND school_id = ?", [req.session.schoolId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
 app.get('/api/teacher/students', requireAuth(['teacher']), (req, res) => {
-    db.all("SELECT id, username, email FROM users WHERE role = 'student' AND class_name = ? AND status = 'Active'", [req.session.className], (err, rows) => {
+    db.all("SELECT id, username, email FROM users WHERE role = 'student' AND class_name = ? AND status = 'Active' AND school_id = ?", [req.session.className, req.session.schoolId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
@@ -545,18 +583,27 @@ app.get('/api/teacher/students', requireAuth(['teacher']), (req, res) => {
 
 app.post('/api/relieve/student', requireAuth(['teacher']), (req, res) => {
     const { studentId, draftText } = req.body;
-    db.run("INSERT INTO relieving_requests (student_id, teacher_id, draft_text) VALUES (?, ?, ?)",
-        [studentId, req.session.userId, draftText], function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Relieving letter drafted and sent to Principal.' });
+    
+    // Check pending requests limit (Max 5)
+    db.get("SELECT COUNT(*) as count FROM relieving_requests WHERE teacher_id = ? AND status LIKE 'Pending%'", [req.session.userId], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (row && row.count >= 5) {
+            return res.status(403).json({ error: 'Limit reached: You have 5 pending requests. Please wait for Principal clearance before raising more.' });
         }
-    );
+        
+        db.run("INSERT INTO relieving_requests (student_id, teacher_id, draft_text) VALUES (?, ?, ?)",
+            [studentId, req.session.userId, draftText], function(err2) {
+                if (err2) return res.status(500).json({ error: err2.message });
+                res.json({ message: 'Relieving letter drafted and sent to Principal.' });
+            }
+        );
+    });
 });
 
 app.get('/api/principal/pending', requireAuth(['principal']), (req, res) => {
-    db.all("SELECT id, username, email, role, class_name, status FROM users WHERE status = 'Pending Registration'", (err, users) => {
+    db.all("SELECT id, username, email, role, class_name, status FROM users WHERE status = 'Pending Registration' AND school_id = ?", [req.session.schoolId], (err, users) => {
         if (err) return res.status(500).json({ error: err.message });
-        db.all("SELECT rr.*, user_student.username as student_name, user_teacher.username as teacher_name FROM relieving_requests rr JOIN users user_student ON rr.student_id = user_student.id JOIN users user_teacher ON rr.teacher_id = user_teacher.id WHERE rr.status = 'Pending Principal Approval'", (err2, relieves) => {
+        db.all("SELECT rr.*, user_student.username as student_name, user_teacher.username as teacher_name FROM relieving_requests rr JOIN users user_student ON rr.student_id = user_student.id JOIN users user_teacher ON rr.teacher_id = user_teacher.id WHERE rr.status = 'Pending Principal Approval' AND user_student.school_id = ?", [req.session.schoolId], (err2, relieves) => {
             if (err2) return res.status(500).json({ error: err2.message });
             res.json({ pendingUsers: users, pendingRelieves: relieves });
         });

@@ -20,6 +20,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 role TEXT,
                 class_name TEXT,
                 parent_id INTEGER,
+                school_id INTEGER,
                 status TEXT DEFAULT 'Active',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`, (err) => {
@@ -28,31 +29,31 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 db.get("SELECT * FROM users WHERE username = 'admin'", (err, row) => {
                     if (!row) {
                         const hash = bcrypt.hashSync('admin123', 10);
-                        db.run("INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)", ['admin', hash, 'admin@school.local', 'admin']);
+                        db.run("INSERT INTO users (username, password, email, role, school_id) VALUES (?, ?, ?, ?, ?)", ['admin', hash, 'admin@school.local', 'admin', null]);
                     }
                 });
                 db.get("SELECT * FROM users WHERE username = 'principal01'", (err, row) => {
                     if (!row) {
                         const hash = bcrypt.hashSync('pass123', 10);
-                        db.run("INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)", ['principal01', hash, 'principal@school.local', 'principal']);
+                        db.run("INSERT INTO users (username, password, email, role, school_id) VALUES (?, ?, ?, ?, ?)", ['principal01', hash, 'principal@school.local', 'principal', 1]);
                     }
                 });
                 db.get("SELECT * FROM users WHERE username = 'teacher01'", (err, row) => {
                     if (!row) {
                         const hash = bcrypt.hashSync('pass123', 10);
-                        db.run("INSERT INTO users (username, password, email, role, class_name) VALUES (?, ?, ?, ?, ?)", ['teacher01', hash, 'teacher@school.local', 'teacher', 'Class 10-A']);
+                        db.run("INSERT INTO users (username, password, email, role, class_name, school_id) VALUES (?, ?, ?, ?, ?, ?)", ['teacher01', hash, 'teacher@school.local', 'teacher', 'Class 10-A', 1]);
                     }
                 });
                 db.get("SELECT * FROM users WHERE username = 'parent01'", (err, row) => {
                     if (!row) {
                         const hash = bcrypt.hashSync('pass123', 10);
-                        db.run("INSERT INTO users (username, password, email, role) VALUES (?, ?, ?, ?)", ['parent01', hash, 'parent@school.local', 'parent']);
+                        db.run("INSERT INTO users (username, password, email, role, school_id) VALUES (?, ?, ?, ?, ?)", ['parent01', hash, 'parent@school.local', 'parent', 1]);
                     }
                 });
                 db.get("SELECT * FROM users WHERE username = 'student01'", (err, row) => {
                     if (!row) {
                         const hash = bcrypt.hashSync('pass123', 10);
-                        db.run("INSERT INTO users (username, password, email, role, class_name) VALUES (?, ?, ?, ?, ?)", ['student01', hash, 'student@school.local', 'student', 'Class 10-A']);
+                        db.run("INSERT INTO users (username, password, email, role, class_name, school_id) VALUES (?, ?, ?, ?, ?, ?)", ['student01', hash, 'student@school.local', 'student', 'Class 10-A', 1]);
                     }
                 });
             });
@@ -126,9 +127,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY(student_id) REFERENCES users(id)
             )`);
 
-            // School Configuration table
-            db.run(`CREATE TABLE IF NOT EXISTS school_config (
-                id INTEGER PRIMARY KEY CHECK (id = 1),
+            // Schools table (multi-tenant support)
+            db.run(`CREATE TABLE IF NOT EXISTS schools (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT,
                 address TEXT,
                 phone TEXT,
@@ -142,13 +143,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
             )`, (err) => {
                 if (err) console.error(err);
                 
-                // Seed default configuration
-                db.get("SELECT * FROM school_config WHERE id = 1", (err, row) => {
+                // Seed default school
+                db.get("SELECT * FROM schools WHERE id = 1", (err, row) => {
                     if (!row) {
-                        db.run(`INSERT INTO school_config 
+                        db.run(`INSERT INTO schools 
                         (id, name, address, phone, history, achievements, principal_name, logo_url, bg_url, primary_color, secondary_color) 
                         VALUES (1, 'Acme Global School', '123 Education Lane, Knowledge City', '+1 800 555 0199', 'Founded in 1999 to nurture young minds.', 'Ranked #1 in District 2025', 'Dr. Eleanor Vance', '/uploads/default-logo.png', '/uploads/default-bg.jpg', '#0f3c5f', '#d1e5f0')`);
-                        console.log("Default school config seeded.");
+                        console.log("Default school seeded.");
                     }
                 });
             });

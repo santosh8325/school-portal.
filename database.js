@@ -58,6 +58,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 });
             });
 
+            // Production schema migration
+            db.run(`ALTER TABLE users ADD COLUMN school_id INTEGER`, (err) => {
+                if (!err) {
+                    // If successful (meaning column didn't exist), update existing Render users
+                    console.log("[MIGRATION] Added school_id to users in Production. Updating tenant allocations...");
+                    db.run(`UPDATE users SET school_id = 1 WHERE role != 'admin'`);
+                    db.run(`UPDATE users SET school_id = NULL WHERE role = 'admin'`);
+                    
+                    // Attempt to rescue the existing school configuration
+                    db.run(`INSERT INTO schools (id, name, address, phone, history, achievements, principal_name, logo_url, bg_url, primary_color, secondary_color)
+                            SELECT id, name, address, phone, history, achievements, principal_name, logo_url, bg_url, primary_color, secondary_color 
+                            FROM school_config WHERE id = 1`, (err2) => {
+                        if (!err2) console.log("[MIGRATION] Rescued previous school configuration!");
+                    });
+                }
+            });
+
             // OTP Auth table
             db.run(`CREATE TABLE IF NOT EXISTS otp_auth (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

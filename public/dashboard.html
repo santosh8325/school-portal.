@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- QRCode.js for personal QR ID card generation -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <script defer src="/js/dashboard.js"></script>
+    <script defer src="/js/dashboard.js?v=0411_1"></script>
 </head>
 <body>
     <div class="dashboard-layout">
@@ -25,7 +25,7 @@
                     <strong id="briefing-achievements">Loading achievements...</strong>
                 </div>
             </div>
-            <div class="user-profile" title="Click to view your profile & QR code" style="cursor:pointer;">
+            <div class="user-profile" title="Click to view your profile & QR code" style="cursor:pointer;" onclick="window.showProfileModal()">
                 <div class="avatar"><span id="user-initial">U</span></div>
                 <div class="user-details">
                     <strong id="user-name">Loading...</strong>

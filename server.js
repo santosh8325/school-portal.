@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 // Add Permissive CSP during debug phase
 app.use((req, res, next) => {
-    res.setHeader("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:; font-src *;");
+    res.setHeader("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:;");
     next();
 });
 

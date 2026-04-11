@@ -1,5 +1,5 @@
 // Bump version to bust the old cache immediately
-const CACHE_NAME = 'school-portal-cache-v4';
+const CACHE_NAME = 'school-portal-cache-v5';
 
 // Only cache CSS and JS — never HTML (HTML must always be fresh from server)
 const STATIC_ASSETS = [

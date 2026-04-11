@@ -105,6 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         profileDiv.style.cursor = 'pointer';
         profileDiv.addEventListener('click', showProfileModal);
     }
+    // Also expose globally as a fallback for inline onclick
+    window.showProfileModal = showProfileModal;
 
     async function showProfileModal() {
         const overlay = document.getElementById('modal-overlay');
@@ -159,10 +161,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (e) {
             console.error('[PROFILE] Modal Error:', e);
-            overlay.innerHTML = '<div class="profile-modal"><p class="error-msg">Error loading profile. Check console.</p></div>';
+            const overlay2 = document.getElementById('modal-overlay');
+            if (overlay2) {
+                overlay2.classList.remove('hidden');
+                overlay2.innerHTML = '<div class="profile-modal"><button onclick="document.getElementById(\'modal-overlay\').classList.add(\'hidden\')" style="float:right;font-size:1.5rem;cursor:pointer;background:none;border:none;">×</button><p class="error-msg" style="padding:40px;">Error loading profile. Please try again.</p></div>';
+            }
         }
     }
-    
+    window.showProfileModal = showProfileModal;
     // Render view — instant swap with a lightweight CSS fade (no setTimeout blocking)
     function renderView(viewId) {
         let html = '';

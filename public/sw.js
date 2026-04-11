@@ -1,13 +1,13 @@
 // Bump version to bust the old cache immediately
-const CACHE_NAME = 'school-portal-cache-v7';
+const CACHE_NAME = 'school-portal-cache-v1.2.0';
 
 // Only cache CSS and JS — never HTML (HTML must always be fresh from server)
 const STATIC_ASSETS = [
-    '/css/style.css',
-    '/css/dashboard.css',
-    '/js/main.js',
-    '/js/auth.js',
-    '/js/dashboard.js'
+    '/css/style.css?v=1.2.0',
+    '/css/dashboard.css?v=1.2.0',
+    '/js/main.js?v=1.2.0',
+    '/js/auth.js?v=1.2.0',
+    '/js/dashboard.js?v=1.2.0'
 ];
 
 self.addEventListener('install', event => {

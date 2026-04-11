@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Portal - Secure Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/dashboard.css?v=1.2.0">
     <!-- jsQR for webcam QR scanning -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/auth.js?v=1.2.0"></script>
     <style>
         /* Login mode toggle tabs */
         .login-tabs { display:flex; gap:8px; margin-bottom:24px; }
@@ -101,6 +101,10 @@
             <!-- QR Scanner -->
             <div id="qr-form-wrapper" class="hidden">
                 <div class="qr-scanner-wrapper">
+                    <div id="qr-loading-overlay" style="position:absolute; inset:0; background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:5; color:white;">
+                        <div class="spinner"></div>
+                        <p style="font-size:0.8rem; margin-top:10px;">Initializing Secure Camera...</p>
+                    </div>
                     <video id="qr-video" autoplay playsinline muted></video>
                     <canvas id="qr-canvas"></canvas>
                     <div class="qr-overlay">
@@ -108,6 +112,10 @@
                     </div>
                 </div>
                 <p class="qr-status" id="qr-status">📷 Point your QR card at the camera...</p>
+                <div id="qr-fallback" class="hidden text-center mt-10">
+                    <p style="font-size:0.8rem; color:#888;">Camera taking too long?</p>
+                    <a href="#" onclick="switchLoginTab('password')" style="font-size:0.85rem; color:var(--primary-color); font-weight:600;">Use Password Login instead</a>
+                </div>
                 <p class="qr-hint">Hold your personal QR ID card steady inside the frame</p>
             </div>
         </div>
@@ -144,14 +152,32 @@
             qrDetected = false;
             const video = document.getElementById('qr-video');
             const status = document.getElementById('qr-status');
+            const overlay = document.getElementById('qr-loading-overlay');
+            const fallback = document.getElementById('qr-fallback');
+            
+            if (overlay) overlay.style.display = 'flex';
+            if (fallback) fallback.classList.add('hidden');
+            
+            // Show fallback if camera takes more than 4 seconds
+            const fallbackTimeout = setTimeout(() => {
+                if (fallback) fallback.classList.remove('hidden');
+            }, 4000);
+
             try {
                 qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                 video.srcObject = qrStream;
                 video.play();
-                video.addEventListener('loadedmetadata', scanFrame);
+                video.addEventListener('loadedmetadata', () => {
+                    clearTimeout(fallbackTimeout);
+                    if (overlay) overlay.style.display = 'none';
+                    scanFrame();
+                });
                 status.textContent = '📷 Point your QR card at the camera...';
                 status.className = 'qr-status';
             } catch (err) {
+                clearTimeout(fallbackTimeout);
+                if (overlay) overlay.style.display = 'none';
+                if (fallback) fallback.classList.remove('hidden');
                 status.textContent = '❌ Camera access denied. Please allow camera permissions.';
                 status.className = 'qr-status error';
             }

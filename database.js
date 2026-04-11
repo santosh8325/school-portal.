@@ -21,6 +21,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 class_name TEXT,
                 parent_id INTEGER,
                 school_id INTEGER,
+                qr_token TEXT,
+                reports_to INTEGER,
                 status TEXT DEFAULT 'Active',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )`, (err) => {
@@ -58,20 +60,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 });
             });
 
-            // Production schema migration
-            db.run(`ALTER TABLE users ADD COLUMN school_id INTEGER`, (err) => {
-                if (!err) {
-                    // If successful (meaning column didn't exist), update existing Render users
-                    console.log("[MIGRATION] Added school_id to users in Production. Updating tenant allocations...");
-                    db.run(`UPDATE users SET school_id = 1 WHERE role != 'admin'`);
-                    db.run(`UPDATE users SET school_id = NULL WHERE role = 'admin'`);
-                    
-                    // Attempt to rescue the existing school configuration
-                    db.run(`INSERT INTO schools (id, name, address, phone, history, achievements, principal_name, logo_url, bg_url, primary_color, secondary_color)
-                            SELECT id, name, address, phone, history, achievements, principal_name, logo_url, bg_url, primary_color, secondary_color 
-                            FROM school_config WHERE id = 1`, (err2) => {
-                        if (!err2) console.log("[MIGRATION] Rescued previous school configuration!");
+            // Production schema migration (legacy support)
+            db.all("PRAGMA table_info(users)", (err, rows) => {
+                if (err) return;
+                const columns = rows.map(r => r.name);
+                if (!columns.includes('school_id')) {
+                    db.run(`ALTER TABLE users ADD COLUMN school_id INTEGER`, (err) => {
+                        if (!err) {
+                            db.run(`UPDATE users SET school_id = 1 WHERE role != 'admin'`);
+                            db.run(`UPDATE users SET school_id = NULL WHERE role = 'admin'`);
+                        }
                     });
+                }
+                if (!columns.includes('qr_token')) {
+                    db.run(`ALTER TABLE users ADD COLUMN qr_token TEXT`);
+                }
+                if (!columns.includes('reports_to')) {
+                    db.run(`ALTER TABLE users ADD COLUMN reports_to INTEGER`);
                 }
             });
 

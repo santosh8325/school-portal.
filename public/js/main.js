@@ -2,8 +2,12 @@
 
 // Securely load and apply the school configuration to the UI
 async function loadSchoolConfig() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
-        const res = await fetch('/api/config');
+        const res = await fetch('/api/config', { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!res.ok) throw new Error('Failed to load config');
         const config = await res.json();
         
@@ -14,17 +18,18 @@ async function loadSchoolConfig() {
         if (config.bg_url) root.style.setProperty('--bg-url', `url(${config.bg_url})`);
         
         // Update specific DOM nodes safely via textContent to strictly prevent XSS
-        const safeTextUpdate = (id, text) => {
+        const safeTextUpdate = (id, text, fallback) => {
             const el = document.getElementById(id);
-            if (el) el.textContent = text;
+            if (el) el.textContent = text || fallback || '';
         };
 
-        safeTextUpdate('school-name', config.name);
-        safeTextUpdate('school-address', config.address);
-        safeTextUpdate('school-history', config.history);
-        safeTextUpdate('school-achievements', config.achievements);
-        safeTextUpdate('school-principal', config.principal_name);
-        safeTextUpdate('school-phone', config.phone);
+        safeTextUpdate('school-name', config.name, 'EduPortal');
+        safeTextUpdate('school-address', config.address, 'Secure Multi-Tenant School System');
+        safeTextUpdate('school-history', config.history, 'Information not available.');
+        safeTextUpdate('school-achievements', config.achievements, 'Recent milestones loading...');
+        safeTextUpdate('school-principal', config.principal_name, 'Principal');
+        safeTextUpdate('school-phone', config.phone, '');
+        safeTextUpdate('school-est', config.id === 1 ? '1999' : '2026', 'Established');
         
         const logoEl = document.getElementById('school-logo');
         if (logoEl && config.logo_url) {
@@ -33,6 +38,12 @@ async function loadSchoolConfig() {
         
     } catch (err) {
         console.error("Error loading theme", err);
+        // Fallback for placeholders to avoid "Loading..." forever
+        const placeholders = ['school-history', 'school-achievements'];
+        placeholders.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.textContent.includes('Loading')) el.textContent = 'Service temporarily unavailable.';
+        });
     }
 }
 

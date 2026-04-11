@@ -6,17 +6,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const viewContainer = document.getElementById('view-container');
     const logoutBtn = document.getElementById('logout-btn');
     
-    // Fetch user context
+    // Fetch user context AND school config in PARALLEL — no sequential waiting
+    let currentUser, schoolConfig;
     try {
-        const res = await fetch('/api/auth/me');
-        if (!res.ok) {
-            window.location.href = '/login.html';
-            return;
-        }
-        currentUser = await res.json();
+        const [userRes, cfgRes] = await Promise.all([
+            fetch('/api/auth/me'),
+            fetch('/api/config')
+        ]);
+
+        if (!userRes.ok) { window.location.href = '/login.html'; return; }
+        [currentUser, schoolConfig] = await Promise.all([userRes.json(), cfgRes.json()]);
     } catch (e) {
         window.location.href = '/login.html';
         return;
+    }
+
+    // Apply school branding immediately (no extra round-trip)
+    const safeSet = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+    safeSet('briefing-school-name', schoolConfig.name);
+    safeSet('briefing-history', schoolConfig.history || schoolConfig.address);
+    safeSet('briefing-achievements', schoolConfig.achievements ? `✨ ${schoolConfig.achievements}` : '');
+    if (schoolConfig.primary_color) document.documentElement.style.setProperty('--primary-color', schoolConfig.primary_color);
+    if (schoolConfig.secondary_color) document.documentElement.style.setProperty('--secondary-color', schoolConfig.secondary_color);
+    if (schoolConfig.logo_url) {
+        const logo = document.getElementById('briefing-logo');
+        if (logo) { logo.textContent = ''; logo.style.backgroundImage = `url(${schoolConfig.logo_url})`; }
     }
     
     // Update Sidebar Profile
@@ -54,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]
     };
     
-    const allowedNavs = roleNavs[currentUser.role];
+    const allowedNavs = roleNavs[currentUser.role] || [];
     
     // Build Navigation
     allowedNavs.forEach((nav, index) => {
@@ -76,44 +90,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/login.html';
     });
     
-    // Render initial view
+    // Render initial view immediately — no delay
     if (allowedNavs.length > 0) {
         renderView(allowedNavs[0].id);
     }
     
-    // --- View Templates & Render Logic ---
+    // Render view — instant swap with a lightweight CSS fade (no setTimeout blocking)
     function renderView(viewId) {
-        viewContainer.style.opacity = 0;
+        let html = '';
         
-        setTimeout(() => {
-            let html = '';
-            
-            switch(viewId) {
-                case 'overview': html = renderOverview(); break;
-                case 'classDashboard': html = renderClassDashboard(); break;
-                case 'attendance': html = renderAttendance(); break;
-                case 'homework': html = renderTeacherHomework(); break;
-                case 'homeworkView': html = renderStudentHomework(); break;
-                case 'fees': html = renderFees(); break;
-                case 'logs': html = renderLogs(); break;
-                case 'networking': html = renderNetworking(); break;
-                case 'crossClass': html = renderCrossClass(); break;
-                case 'ptmView': html = renderPTMView(); break;
-                case 'studentNotes': html = renderStudentNotes(); break;
-                case 'tutors': html = renderTutors(); break;
-                case 'studentAnalysis': html = renderStudentAnalysis(); break;
-                case 'studentManager': html = renderStudentManager(); break;
-                case 'staffManager': html = renderStaffManager(); break;
-                default: html = `<h2>Under Construction</h2><p>View ${viewId} is not yet implemented.</p>`;
-            }
-            
-            viewContainer.innerHTML = html;
-            viewContainer.style.opacity = 1;
-            
-            // Post render bindings
-            bindViewEvents(viewId);
-            
-        }, 300);
+        switch(viewId) {
+            case 'overview': html = renderOverview(); break;
+            case 'classDashboard': html = renderClassDashboard(); break;
+            case 'attendance': html = renderAttendance(); break;
+            case 'homework': html = renderTeacherHomework(); break;
+            case 'homeworkView': html = renderStudentHomework(); break;
+            case 'fees': html = renderFees(); break;
+            case 'logs': html = renderLogs(); break;
+            case 'networking': html = renderNetworking(); break;
+            case 'crossClass': html = renderCrossClass(); break;
+            case 'ptmView': html = renderPTMView(); break;
+            case 'studentNotes': html = renderStudentNotes(); break;
+            case 'tutors': html = renderTutors(); break;
+            case 'studentAnalysis': html = renderStudentAnalysis(); break;
+            case 'studentManager': html = renderStudentManager(); break;
+            case 'staffManager': html = renderStaffManager(); break;
+            default: html = `<h2>Under Construction</h2><p>View ${viewId} is not yet implemented.</p>`;
+        }
+
+        viewContainer.innerHTML = html;
+        // Lightweight fade-in via class toggle — no blocking delay
+        viewContainer.classList.remove('fade-in');
+        void viewContainer.offsetWidth; // force reflow to restart animation
+        viewContainer.classList.add('fade-in');
+        
+        // Post render bindings
+        bindViewEvents(viewId);
     }
     
     // Component Renderers (Simple string interpolation for SPA)
@@ -160,8 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="card">
                 <form id="attendance-form" class="standard-form">
                     <div class="input-group">
-                        <label>Student ID (for demo, use 2 for student01)</label>
-                        <input type="number" id="att-student-id" required>
+                        <label>Select Student</label>
+                        <select id="att-student-id" required>
+                            <option value="">Loading students...</option>
+                        </select>
                     </div>
                     <div class="input-group">
                         <label>Date</label>
@@ -300,8 +314,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="card mb-20">
                     <form id="ptm-form" class="standard-form">
                         <div class="input-group">
-                            <label>Select Teacher ID (e.g. 3 for teacher01)</label>
-                            <input type="number" id="ptm-teacher" required>
+                            <label>Select Teacher</label>
+                            <select id="ptm-teacher" required>
+                                <option value="">Loading teachers...</option>
+                            </select>
                         </div>
                         <div class="input-group">
                             <label>Date</label>
@@ -422,10 +438,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <option value="">Loading Students...</option>
                     </select>
                     <textarea id="relieve-draft" rows="6" required style="width:100%; padding:8px; margin-bottom: 10px;">Dear Parent,
-We formally confirm that your child has successfully completed their obligations at Acme Global School. They demonstrated remarkable growth and dedication.
+We formally confirm that your child has successfully completed their obligations at ${schoolConfig.name || 'our institution'}. They demonstrated remarkable growth and dedication.
 We wish them the best in their future endeavors.
 Warm regards,
-[Teacher Name]</textarea>
+[Teacher Name], ${schoolConfig.name || ''}</textarea>
                     <button type="submit" class="btn-danger full-width mt-10">Submit Relieving Request</button>
                     <p id="relieve-msg" class="mt-10 font-bold"></p>
                 </form>
@@ -667,23 +683,40 @@ Warm regards,
         }
 
         if (viewId === 'ptmView') {
+            // Load real teacher dropdown for parent's school
+            const teacherSel = document.getElementById('ptm-teacher');
+            if (teacherSel) {
+                fetch('/api/school/teachers').then(r => r.json()).then(teachers => {
+                    if (!teachers || teachers.error || !teachers.length) {
+                        teacherSel.innerHTML = '<option value="">No teachers found at your school</option>';
+                        return;
+                    }
+                    teacherSel.innerHTML = '<option value="">Select Teacher...</option>' +
+                        teachers.map(t => `<option value="${t.id}">${t.username}${t.class_name ? ' — ' + t.class_name : ''}</option>`).join('');
+                }).catch(() => { teacherSel.innerHTML = '<option value="">Error loading teachers</option>'; });
+            }
+
             const form = document.getElementById('ptm-form');
             if(form) {
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
+                    const teacherId = document.getElementById('ptm-teacher').value;
+                    if (!teacherId) { document.getElementById('ptm-msg').textContent = 'Please select a teacher.'; return; }
                     const res = await fetch('/api/ptm', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
-                            teacherId: document.getElementById('ptm-teacher').value,
+                            teacherId,
                             date: document.getElementById('ptm-date').value,
                             time: document.getElementById('ptm-time').value,
                             override: document.getElementById('ptm-override').checked
                         })
                     });
                     const data = await res.json();
-                    document.getElementById('ptm-msg').textContent = data.message || data.error;
-                    bindViewEvents('ptmView');
+                    const msg = document.getElementById('ptm-msg');
+                    msg.textContent = data.message || data.error;
+                    msg.style.color = res.ok ? 'green' : 'red';
+                    if (res.ok) bindViewEvents('ptmView');
                 });
             }
             fetch('/api/ptm').then(r=>r.json()).then(ptms => {
@@ -724,19 +757,35 @@ Warm regards,
         }
         
         if (viewId === 'attendance') {
+            // Load real student dropdown for this teacher's class
+            const attSelect = document.getElementById('att-student-id');
+            if (attSelect) {
+                fetch('/api/teacher/students').then(r => r.json()).then(students => {
+                    if (!students || students.error) {
+                        attSelect.innerHTML = '<option value="">No students found in your class</option>';
+                        return;
+                    }
+                    attSelect.innerHTML = '<option value="">Select Student...</option>' +
+                        students.map(s => `<option value="${s.id}">${s.username} (${s.email})</option>`).join('');
+                }).catch(() => { attSelect.innerHTML = '<option value="">Error loading students</option>'; });
+            }
             document.getElementById('attendance-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const studentId = document.getElementById('att-student-id').value;
+                if (!studentId) { document.getElementById('att-msg').textContent = 'Please select a student.'; return; }
                 const res = await fetch('/api/attendance', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        studentId: document.getElementById('att-student-id').value,
+                        studentId,
                         date: document.getElementById('att-date').value,
                         status: document.getElementById('att-status').value
                     })
                 });
+                const data = await res.json();
                 const msg = document.getElementById('att-msg');
-                msg.textContent = (res.ok) ? "Attendance logged successfully!" : "Error logging attendance.";
+                msg.textContent = res.ok ? '✅ Attendance logged successfully!' : (data.error || 'Error logging attendance.');
+                msg.style.color = res.ok ? 'green' : 'red';
             });
         }
         

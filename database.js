@@ -176,6 +176,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 teacher_id INTEGER,
                 requested_class TEXT,
+                school_id INTEGER,
                 status TEXT DEFAULT 'Pending Principal & Class-In-Charge Approval',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(teacher_id) REFERENCES users(id)

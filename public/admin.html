@@ -156,17 +156,48 @@
                 window.location.href = '/';
             });
 
+            // Cache all schools for use in auto-fill
+            let allSchools = [];
+
             async function refreshSchools() {
                 const res = await fetch('/api/admin/schools');
-                const schools = await res.json();
+                allSchools = await res.json();
                 
                 const table = document.querySelector('#schools-table tbody');
-                table.innerHTML = schools.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.principal_name || 'Unassigned'}</td></tr>`).join('');
+                table.innerHTML = allSchools.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.principal_name || 'Unassigned'}</td></tr>`).join('');
                 
-                const dropdowns = [document.getElementById('cp-school'), document.getElementById('config-school'), document.getElementById('upload-school')];
-                const options = '<option value="">Select School...</option>' + schools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
-                dropdowns.forEach(d => { if(d) d.innerHTML = options; });
+                // Remember current selections before rebuilding dropdowns
+                const configSel = document.getElementById('config-school');
+                const cpSel = document.getElementById('cp-school');
+                const upSel = document.getElementById('upload-school');
+                const prevConfig = configSel ? configSel.value : '';
+                const prevCp = cpSel ? cpSel.value : '';
+                const prevUp = upSel ? upSel.value : '';
+
+                const options = '<option value="">Select School...</option>' + allSchools.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                [configSel, cpSel, upSel].forEach(d => { if(d) d.innerHTML = options; });
+
+                // Restore previous selections
+                if (configSel && prevConfig) configSel.value = prevConfig;
+                if (cpSel && prevCp) cpSel.value = prevCp;
+                if (upSel && prevUp) upSel.value = prevUp;
             }
+
+            // Auto-fill config form when a school is selected
+            document.getElementById('config-school').addEventListener('change', function() {
+                const schoolId = parseInt(this.value);
+                if (!schoolId) return;
+                const school = allSchools.find(s => s.id === schoolId);
+                if (!school) return;
+                document.getElementById('cfg-name').value = school.name || '';
+                document.getElementById('cfg-address').value = school.address || '';
+                document.getElementById('cfg-phone').value = school.phone || '';
+                document.getElementById('cfg-principal').value = school.principal_name || '';
+                document.getElementById('cfg-history').value = school.history || '';
+                document.getElementById('cfg-achievements').value = school.achievements || '';
+                document.getElementById('cfg-primary').value = school.primary_color || '#e53935';
+                document.getElementById('cfg-secondary').value = school.secondary_color || '#ffcdd2';
+            });
 
             refreshSchools();
 

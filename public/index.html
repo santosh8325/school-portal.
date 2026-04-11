@@ -3,44 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Portal</title>
+    <title>EduPortal — School Management System</title>
+    <meta name="description" content="A secure, multi-tenant school management portal for Principals, Teachers, Parents and Students.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Outfit:wght@400;600;700&display=swap">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="landing-page border-theme">
     <div class="background-overlay"></div>
-    
+
     <header class="glass-header">
         <div class="logo-container">
             <img src="" alt="School Logo" id="school-logo">
             <div class="school-titles">
-                <h1 id="school-name">School Portal</h1>
-                <p id="school-address">Loading...</p>
+                <h1 id="school-name">EduPortal</h1>
+                <p id="school-address">Secure Multi-Tenant School System</p>
             </div>
         </div>
-        <!-- Removed unauthenticated dashboard navigation links -->
+        <nav class="main-nav" aria-label="Landing Navigation">
+            <ul>
+                <li><a href="#" class="tab-trigger active" data-tab="history" id="nav-history">History</a></li>
+                <li><a href="#" class="tab-trigger" data-tab="team" id="nav-team">Team</a></li>
+                <li><a href="#" class="tab-trigger" data-tab="reputation" id="nav-reputation">Reputation</a></li>
+                <li><a href="#" class="tab-trigger" data-tab="community" id="nav-community">Community</a></li>
+            </ul>
+        </nav>
     </header>
 
     <main class="landing-main">
-        <section class="info-section glass-panel">
-            <h2>Welcome to our portal</h2>
-            <div class="info-content">
-                <h3>Our History</h3>
-                <p id="school-history">Loading history...</p>
-                <h3>Recent Achievements</h3>
-                <p id="school-achievements">Loading achievements...</p>
-                <h3>Principal</h3>
-                <p id="school-principal">Loading...</p>
-                <h3>Contact</h3>
-                <p id="school-phone">Loading...</p>
+        <!-- Tabbed Info Panel -->
+        <section class="info-section glass-panel" aria-label="School Information">
+            <div class="tab-panels">
+
+                <div class="tab-panel active" id="tab-history" role="tabpanel" aria-labelledby="nav-history">
+                    <div class="tab-header">
+                        <span class="tab-icon">🏛️</span>
+                        <h2>Our History</h2>
+                    </div>
+                    <p id="school-history" class="tab-body-text">Loading school history...</p>
+                    <div class="info-stats">
+                        <div class="stat-card"><span class="stat-value" id="school-est">Est. —</span><span class="stat-label">Established</span></div>
+                        <div class="stat-card"><span class="stat-value">Multi-Tenant</span><span class="stat-label">Architecture</span></div>
+                        <div class="stat-card"><span class="stat-value">100%</span><span class="stat-label">Secure</span></div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-team" role="tabpanel" aria-labelledby="nav-team">
+                    <div class="tab-header">
+                        <span class="tab-icon">👥</span>
+                        <h2>Leadership Team</h2>
+                    </div>
+                    <div class="team-grid">
+                        <div class="team-card">
+                            <div class="team-avatar" aria-hidden="true">🎓</div>
+                            <strong id="school-principal">Principal</strong>
+                            <span>Head of School</span>
+                        </div>
+                        <div class="team-card">
+                            <div class="team-avatar" aria-hidden="true">📋</div>
+                            <strong>Administration</strong>
+                            <span>Academic Affairs</span>
+                        </div>
+                        <div class="team-card">
+                            <div class="team-avatar" aria-hidden="true">💻</div>
+                            <strong>Tech Division</strong>
+                            <span>Portal Management</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-reputation" role="tabpanel" aria-labelledby="nav-reputation">
+                    <div class="tab-header">
+                        <span class="tab-icon">🏆</span>
+                        <h2>Reputation &amp; Journey</h2>
+                    </div>
+                    <p id="school-achievements" class="tab-body-text">Loading achievements...</p>
+                    <div class="milestone-list">
+                        <div class="milestone"><span class="milestone-dot"></span><p>Digitized attendance &amp; homework grading system</p></div>
+                        <div class="milestone"><span class="milestone-dot"></span><p>OTP-secured two-factor authentication for all roles</p></div>
+                        <div class="milestone"><span class="milestone-dot"></span><p>Multi-school SaaS platform with tenant isolation</p></div>
+                    </div>
+                </div>
+
+                <div class="tab-panel" id="tab-community" role="tabpanel" aria-labelledby="nav-community">
+                    <div class="tab-header">
+                        <span class="tab-icon">⚙️</span>
+                        <h2>Developer Community</h2>
+                    </div>
+                    <p class="tab-body-text">EduPortal is built on an open, extensible Node.js &amp; SQLite architecture. Contributions, API integrations, and community extensions are always welcome.</p>
+                    <div class="community-links">
+                        <div class="comm-badge">🔧 Node.js + Express</div>
+                        <div class="comm-badge">🗄️ SQLite3</div>
+                        <div class="comm-badge">🔐 bcrypt + OTP Auth</div>
+                        <div class="comm-badge">📱 Service Worker PWA</div>
+                        <div class="comm-badge">📊 XLSX Bulk Imports</div>
+                    </div>
+                    <p id="school-phone" class="tab-body-text" style="margin-top:1.5rem;"></p>
+                </div>
+
             </div>
         </section>
 
-        <section class="login-section glass-panel">
-            <h2>Secure Portal Access</h2>
-            <p style="margin-bottom: 20px; color: var(--text-color);">The centralized login area for <strong>Super Admins, Principals, Staff, and Students</strong>. Access your dashboard securely with 2-Factor Authentication.</p>
-            <a href="/login.html" style="text-decoration:none;">
-                <button type="button" class="btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem;">Go to Central Login</button>
+        <!-- Login Gateway Panel -->
+        <section class="login-section glass-panel" aria-label="Secure Login Gateway">
+            <h2>Portal Access</h2>
+            <p class="gateway-subtitle">Select your access level to continue.</p>
+
+            <div class="dual-login-toggle" role="group" aria-label="Login type selection">
+                <button class="toggle-btn active" id="btn-user-login" aria-pressed="true">
+                    <span class="toggle-icon">👤</span> User Login
+                </button>
+                <button class="toggle-btn" id="btn-admin-login" aria-pressed="false">
+                    <span class="toggle-icon">🛡️</span> Admin Gateway
+                </button>
+            </div>
+
+            <div class="gateway-description" id="gateway-desc">
+                <p>For <strong>Principals, Teachers, Parents &amp; Students</strong>. Access your school-specific dashboard securely with 2FA.</p>
+            </div>
+
+            <a href="/login.html" id="go-to-login" style="text-decoration:none;">
+                <button type="button" class="btn-primary" id="login-cta-btn" style="width:100%; padding:15px; font-size:1.05rem; margin-top:1rem;">
+                    Proceed to Secure Login →
+                </button>
             </a>
+
+            <div class="security-badges">
+                <span class="sec-badge">🔒 OTP 2FA</span>
+                <span class="sec-badge">🏫 School-Isolated</span>
+                <span class="sec-badge">🛡️ RBAC</span>
+            </div>
         </section>
     </main>
 

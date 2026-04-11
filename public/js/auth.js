@@ -3,6 +3,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const otpForm = document.getElementById('otp-form');
     let currentTempId = null;
 
+    // Detect Admin Gateway mode from query param set by the toggle on index.html
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdminMode = urlParams.get('mode') === 'admin';
+    if (isAdminMode) {
+        const heading = document.getElementById('login-heading');
+        const subtext = document.getElementById('login-subtext');
+        const usernameInput = document.getElementById('username');
+        if (heading) heading.textContent = '🛡️ Admin Gateway';
+        if (subtext) subtext.textContent = 'Super Admin access only. All actions are logged.';
+        if (usernameInput) usernameInput.placeholder = 'Admin username';
+        // Visual badge
+        const badge = document.createElement('div');
+        badge.id = 'admin-mode-badge';
+        badge.style.cssText = 'background:#1a252f;color:white;padding:0.4rem 1rem;border-radius:6px;font-size:0.8rem;text-align:center;margin-bottom:1rem;font-weight:600;';
+        badge.textContent = '⚠️ Admin Portal — Restricted Access';
+        if (loginForm) loginForm.prepend(badge);
+    }
+
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();

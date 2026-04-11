@@ -212,11 +212,19 @@ app.post('/api/auth/verify-otp', (req, res) => {
         
         db.run("INSERT INTO activity_logs (user_id, action, module, details) VALUES (?, ?, ?, ?)", [user.id, 'LOGIN', 'auth', 'Successful login with OTP']);
         
+        // Role-based redirect with school-specific URL for tenancy
+        let redirectUrl = '/dashboard.html';
+        if (user.role === 'admin') {
+            redirectUrl = '/admin.html';
+        } else if (user.school_id) {
+            redirectUrl = `/school/${user.school_id}/dashboard`;
+        }
+        
         res.json({ 
             message: 'Logged in successfully', 
             role: user.role, 
             username: user.username,
-            redirect: '/dashboard.html'
+            redirect: redirectUrl
         });
     };
 
@@ -285,13 +293,25 @@ app.get('/api/admin/system', requireAuth(['admin', 'principal']), (req, res) => 
 
 // 1. System Logs API
 app.get('/api/logs', requireAuth(['principal', 'admin']), (req, res) => {
-    db.all(`SELECT activity_logs.*, users.username, users.role 
-            FROM activity_logs 
-            JOIN users ON activity_logs.user_id = users.id 
-            ORDER BY activity_logs.created_at DESC LIMIT 100`, (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+    // Principals only see their own school's logs
+    if (req.session.role === 'admin') {
+        db.all(`SELECT activity_logs.*, users.username, users.role 
+                FROM activity_logs 
+                JOIN users ON activity_logs.user_id = users.id 
+                ORDER BY activity_logs.created_at DESC LIMIT 100`, (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows);
+        });
+    } else {
+        db.all(`SELECT activity_logs.*, users.username, users.role 
+                FROM activity_logs 
+                JOIN users ON activity_logs.user_id = users.id 
+                WHERE users.school_id = ?
+                ORDER BY activity_logs.created_at DESC LIMIT 100`, [req.session.schoolId], (err, rows) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json(rows);
+        });
+    }
 });
 
 // 2. Attendance API
@@ -424,14 +444,15 @@ app.get('/api/fees', requireAuth(['parent', 'student', 'principal']), (req, res)
 
 app.post('/api/requests/cross-class', requireAuth(['teacher']), (req, res) => {
     const { requestedClass } = req.body;
-    db.run("INSERT INTO cross_class_requests (teacher_id, requested_class) VALUES (?, ?)", [req.session.userId, requestedClass], function(err) {
+    db.run("INSERT INTO cross_class_requests (teacher_id, requested_class, school_id) VALUES (?, ?, ?)", [req.session.userId, requestedClass, req.session.schoolId], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: `Sent to ${requestedClass} In-Charge & Principal for Approval.` });
     });
 });
 
 app.get('/api/requests/cross-class', requireAuth(['teacher', 'principal']), (req, res) => {
-    db.all("SELECT cr.*, u.username FROM cross_class_requests cr JOIN users u ON cr.teacher_id = u.id ORDER BY cr.created_at DESC", [], (err, rows) => {
+    // Scoped to the school of the requesting user
+    db.all("SELECT cr.*, u.username FROM cross_class_requests cr JOIN users u ON cr.teacher_id = u.id WHERE u.school_id = ? ORDER BY cr.created_at DESC", [req.session.schoolId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
@@ -499,10 +520,10 @@ app.post('/api/onboard/students', requireAuth(['teacher', 'principal']), upload.
 
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
-            const stmt = db.prepare("INSERT INTO users (username, password, email, role, class_name, status) VALUES (?, ?, ?, 'student', ?, 'Pending Registration')");
+            const stmt = db.prepare("INSERT INTO users (username, password, email, role, class_name, status, school_id) VALUES (?, ?, ?, 'student', ?, 'Pending Registration', ?)");
             for (let s of students) {
                 const pass = s.Password ? bcrypt.hashSync(s.Password.toString(), 10) : bcrypt.hashSync('pass123', 10);
-                stmt.run(s.Username, pass, s.Email, s.Class || req.session.className);
+                stmt.run(s.Username, pass, s.Email, s.Class || req.session.className, req.session.schoolId);
             }
             stmt.finalize();
             db.run("COMMIT", (err) => {
@@ -540,10 +561,10 @@ app.post('/api/onboard/teachers', requireAuth(['principal']), upload.single('exc
 
         db.serialize(() => {
             db.run("BEGIN TRANSACTION");
-            const stmt = db.prepare("INSERT INTO users (username, password, email, role, class_name, status) VALUES (?, ?, ?, 'teacher', ?, 'Active')");
+            const stmt = db.prepare("INSERT INTO users (username, password, email, role, class_name, status, school_id) VALUES (?, ?, ?, 'teacher', ?, 'Active', ?)");
             for (let t of teachers) {
                 const pass = t.Password ? bcrypt.hashSync(t.Password.toString(), 10) : bcrypt.hashSync('pass123', 10);
-                stmt.run(t.Username || t.username, pass, t.Email || t.email, t.ClassAssigned || t.className);
+                stmt.run(t.Username || t.username, pass, t.Email || t.email, t.ClassAssigned || t.className, req.session.schoolId);
             }
             stmt.finalize();
             db.run("COMMIT", (err) => {
@@ -568,6 +589,14 @@ app.post('/api/relieve/teacher', requireAuth(['principal']), (req, res) => {
 });
 
 app.get('/api/principal/teachers-list', requireAuth(['principal']), (req, res) => {
+    db.all("SELECT id, username, class_name FROM users WHERE role = 'teacher' AND status = 'Active' AND school_id = ?", [req.session.schoolId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// Parent-accessible teacher list for PTM booking — scoped to school
+app.get('/api/school/teachers', requireAuth(['parent', 'principal', 'teacher']), (req, res) => {
     db.all("SELECT id, username, class_name FROM users WHERE role = 'teacher' AND status = 'Active' AND school_id = ?", [req.session.schoolId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
@@ -646,6 +675,19 @@ app.post('/api/principal/approve-relieve', requireAuth(['principal']), (req, res
             });
         });
     });
+});
+
+// School-specific dashboard route with tenant isolation
+app.get('/school/:schoolId/dashboard', (req, res) => {
+    // Must be authenticated
+    if (!req.session.userId) {
+        return res.redirect('/');
+    }
+    // Enforce tenant isolation: user can only access their own school's dashboard
+    if (req.session.role !== 'admin' && String(req.session.schoolId) !== String(req.params.schoolId)) {
+        return res.status(403).send('<h2>403 Forbidden</h2><p>You are not authorized to access this school dashboard.</p><a href="/">Return Home</a>');
+    }
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
 
 // Let the frontend HTML routing handle pages

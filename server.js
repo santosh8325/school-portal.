@@ -12,6 +12,12 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Add Permissive CSP during debug phase
+app.use((req, res, next) => {
+    res.setHeader("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data:; font-src *;");
+    next();
+});
+
 // Middleware configuration
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,10 +36,10 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
     fs.mkdirSync(path.join(__dirname, 'uploads'));
 }
 
-// QR Token migration — add column and seed tokens for all users without one
+// Migrations: QR tokens + reporting hierarchy
 setTimeout(() => {
+    // QR tokens
     db.run('ALTER TABLE users ADD COLUMN qr_token TEXT', () => {
-        // Generate tokens for any user who doesn't have one yet
         db.all('SELECT id FROM users WHERE qr_token IS NULL', (err, users) => {
             if (err || !users) return;
             users.forEach(u => {
@@ -42,6 +48,10 @@ setTimeout(() => {
             });
             if (users.length > 0) console.log(`[QR] Generated tokens for ${users.length} user(s).`);
         });
+    });
+    // Reporting hierarchy: who does this user report to?
+    db.run('ALTER TABLE users ADD COLUMN reports_to INTEGER', () => {
+        console.log('[MIGRATION] reports_to column ready.');
     });
 }, 2000);
 
@@ -308,6 +318,45 @@ app.get('/api/auth/my-qr', requireAuth(['principal', 'teacher', 'parent', 'stude
 });
 
 // API: User Session Data
+// API: User Profile Details (includes reports_to and QR)
+app.get('/api/profile', requireAuth(['principal', 'teacher', 'parent', 'student', 'admin']), (req, res) => {
+    const query = `
+        SELECT u.id, u.username, u.email, u.role, u.class_name, u.status, u.qr_token, u.reports_to,
+               r.username as reporter_name
+        FROM users u
+        LEFT JOIN users r ON u.reports_to = r.id
+        WHERE u.id = ?
+    `;
+    db.get(query, [req.session.userId], (err, user) => {
+        if (err || !user) return res.status(500).json({ error: 'Could not fetch profile' });
+        res.json(user);
+    });
+});
+
+// API: Get school hierarchy (for principal to manage)
+app.get('/api/hierarchy', requireAuth(['principal']), (req, res) => {
+    const query = `
+        SELECT id, username, role, reports_to 
+        FROM users 
+        WHERE (role = 'teacher' OR role = 'principal') AND school_id = ? AND status = 'Active'
+    `;
+    db.all(query, [req.session.schoolId], (err, users) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(users);
+    });
+});
+
+// API: Set reporting line (Principal only)
+app.post('/api/hierarchy/report', requireAuth(['principal']), (req, res) => {
+    const { userId, reportsToId } = req.body;
+    // reportsToId can be null to report to Principal (default)
+    db.run("UPDATE users SET reports_to = ? WHERE id = ? AND school_id = ?", 
+        [reportsToId || null, userId, req.session.schoolId], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Reporting hierarchy updated successfully' });
+    });
+});
+
 app.get('/api/auth/me', (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ error: 'Not authenticated' });

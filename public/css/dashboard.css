@@ -494,9 +494,56 @@ select {
     100% { transform: rotate(360deg); }
 }
 
-/* Animations */
-.fade-in {
-    animation: fadeIn 0.15s ease-out;
+/* Profile Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.profile-modal {
+    background: var(--white);
+    width: 100%;
+    max-width: 400px;
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.btn-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-light);
+}
+
+.hierarchy-list {
+    margin-top: 20px;
+}
+
+.hierarchy-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hierarchy-item select {
+    width: auto;
+    padding: 5px;
 }
 
 @keyframes fadeIn {

@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
     let currentUser = null;
+    let schoolConfig = null;
     
     // Elements
     const navContainer = document.getElementById('dynamic-nav');
@@ -7,7 +8,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutBtn = document.getElementById('logout-btn');
     
     // Fetch user context AND school config in PARALLEL — no sequential waiting
-    let currentUser, schoolConfig;
     try {
         const [userRes, cfgRes] = await Promise.all([
             fetch('/api/auth/me'),
@@ -15,8 +15,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]);
 
         if (!userRes.ok) { window.location.href = '/login.html'; return; }
-        [currentUser, schoolConfig] = await Promise.all([userRes.json(), cfgRes.json()]);
+        const [userJson, configJson] = await Promise.all([userRes.json(), cfgRes.json()]);
+        currentUser = userJson;
+        schoolConfig = configJson;
+        console.log('[DASHBOARD] User loaded:', currentUser.username);
     } catch (e) {
+        console.error('[DASHBOARD] Initialization Failure:', e);
         window.location.href = '/login.html';
         return;
     }
@@ -93,6 +97,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Render initial view immediately — no delay
     if (allowedNavs.length > 0) {
         renderView(allowedNavs[0].id);
+    }
+
+    // Bind Profile Click
+    const profileDiv = document.querySelector('.user-profile');
+    if (profileDiv) {
+        profileDiv.style.cursor = 'pointer';
+        profileDiv.addEventListener('click', showProfileModal);
+    }
+
+    async function showProfileModal() {
+        const overlay = document.getElementById('modal-overlay');
+        overlay.classList.remove('hidden');
+        overlay.innerHTML = '<div class="loader-container"><div class="spinner"></div></div>';
+
+        try {
+            const res = await fetch('/api/profile');
+            const user = await res.json();
+
+            overlay.innerHTML = `
+                <div class="profile-modal fade-in">
+                    <button class="btn-close" id="close-modal">&times;</button>
+                    <div class="text-center">
+                        <div class="avatar" style="width:80px; height:80px; font-size:2rem; margin:0 auto 15px;">
+                            ${user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <h2 style="color:var(--primary-color)">${user.username}</h2>
+                        <p class="badge ${user.role}">${user.role.toUpperCase()}</p>
+                    </div>
+                    
+                    <div class="mt-20" style="font-size:0.9rem; line-height:1.8;">
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Class:</strong> ${user.class_name || 'N/A'}</p>
+                        <p><strong>Reports To:</strong> ${user.reporter_name || 'Principal (Direct)'}</p>
+                        <p><strong>Status:</strong> <span style="color:var(--success)">${user.status}</span></p>
+                    </div>
+
+                    <div class="mt-20 text-center" style="border-top:1px solid #eee; padding-top:20px;">
+                        <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Your Personal Login QR Code</p>
+                        <div id="modal-qr-display" style="display:flex; justify-content:center;"></div>
+                    </div>
+                </div>
+            `;
+
+            // Draw QR code in modal
+            const qrDisplay = document.getElementById('modal-qr-display');
+            if (window.QRCode) {
+                new window.QRCode(qrDisplay, {
+                    text: user.qr_token,
+                    width: 150, height: 150
+                });
+            }
+
+            document.getElementById('close-modal').addEventListener('click', () => {
+                overlay.classList.add('hidden');
+            });
+            
+            overlay.addEventListener('click', (e) => {
+                if(e.target === overlay) overlay.classList.add('hidden');
+            });
+
+        } catch (e) {
+            console.error('[PROFILE] Modal Error:', e);
+            overlay.innerHTML = '<div class="profile-modal"><p class="error-msg">Error loading profile. Check console.</p></div>';
+        }
     }
     
     // Render view — instant swap with a lightweight CSS fade (no setTimeout blocking)
@@ -500,6 +568,17 @@ Warm regards,
             </div>
 
             <div class="cards-grid" style="grid-template-columns: 1fr;">
+                <div class="card">
+                    <h3 style="color:var(--primary-color)">Reporting Hierarchy</h3>
+                    <p style="font-size:0.85rem; color:#666;" class="mb-20">Select who each teacher reports to. If unassigned, they report directly to the Principal.</p>
+                    <div id="hierarchy-container" class="hierarchy-list">
+                        <p>Loading hierarchy data...</p>
+                    </div>
+                    <p id="hierarchy-msg" class="mt-10 font-bold text-center"></p>
+                </div>
+            </div>
+
+            <div class="cards-grid" style="grid-template-columns: 1fr;">
                 <div class="card scrollable-table">
                     <h3 style="color:var(--primary-color)">Pending Users (Students Onboarding)</h3>
                     <table class="data-table mt-10" id="pending-users-table">
@@ -643,6 +722,63 @@ Warm regards,
         }
 
         if (viewId === 'staffManager') {
+            // Reporting Hierarchy Management Logic
+            const hContainer = document.getElementById('hierarchy-container');
+            const hMsg = document.getElementById('hierarchy-msg');
+
+            if (hContainer) {
+                fetch('/api/hierarchy').then(r => r.json()).then(users => {
+                    const teachers = users.filter(u => u.role === 'teacher');
+                    const reporters = users.filter(u => u.role === 'teacher' || u.role === 'principal');
+
+                    hContainer.innerHTML = teachers.map(t => `
+                        <div class="hierarchy-item">
+                            <div>
+                                <strong>${t.username}</strong>
+                                <div style="font-size:0.75rem; color:#888;">Teacher ID: ${t.id}</div>
+                            </div>
+                            <div>
+                                <label style="font-size:0.75rem; display:block; margin-bottom:4px;">Reports To:</label>
+                                <select class="report-select" data-user-id="${t.id}">
+                                    <option value="">Principal (Direct)</option>
+                                    ${reporters.filter(r => r.id !== t.id).map(r => `
+                                        <option value="${r.id}" ${t.reports_to == r.id ? 'selected' : ''}>
+                                            ${r.username} (${r.role})
+                                        </option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    hContainer.querySelectorAll('.report-select').forEach(select => {
+                        select.addEventListener('change', async () => {
+                            const userId = select.dataset.userId;
+                            const reportsToId = select.value;
+                            
+                            hMsg.textContent = "Updating hierarchy...";
+                            hMsg.style.color = "var(--text-light)";
+
+                            const res = await fetch('/api/hierarchy/report', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId, reportsToId })
+                            });
+
+                            if (res.ok) {
+                                hMsg.textContent = "✅ Hierarchy updated successfully!";
+                                hMsg.style.color = "var(--success)";
+                            } else {
+                                hMsg.textContent = "❌ Update failed.";
+                                hMsg.style.color = "var(--error)";
+                            }
+                        });
+                    });
+                }).catch(err => {
+                    hContainer.innerHTML = '<p class="error-msg">Error loading hierarchy data.</p>';
+                });
+            }
+
             window.refreshStaffTables = () => {
                 fetch('/api/principal/pending').then(r=>r.json()).then(data => {
                     const pendingStudents = data.pendingUsers.filter(u => u.role === 'student');

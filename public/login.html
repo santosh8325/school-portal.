@@ -6,7 +6,50 @@
     <title>School Portal - Secure Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/dashboard.css">
+    <!-- jsQR for webcam QR scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script defer src="/js/auth.js"></script>
+    <style>
+        /* Login mode toggle tabs */
+        .login-tabs { display:flex; gap:8px; margin-bottom:24px; }
+        .login-tab {
+            flex:1; padding:10px; border:2px solid #ddd; background:#fff;
+            border-radius:10px; cursor:pointer; font-weight:600; font-size:0.9rem;
+            transition:all 0.2s; color:#777;
+        }
+        .login-tab.active { border-color:var(--primary-color); background:var(--primary-color); color:#fff; }
+        
+        /* QR Scanner */
+        .qr-scanner-wrapper {
+            position:relative; border-radius:16px; overflow:hidden;
+            background:#111; aspect-ratio:1; margin:0 auto 16px; max-width:280px;
+            border:3px solid var(--primary-color);
+        }
+        #qr-video { width:100%; height:100%; object-fit:cover; display:block; }
+        .qr-overlay {
+            position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+            pointer-events:none;
+        }
+        .qr-frame {
+            width:160px; height:160px; border:3px solid #fff; border-radius:8px;
+            box-shadow:0 0 0 999px rgba(0,0,0,0.4);
+            animation: pulse-border 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-border {
+            0%,100% { border-color:#fff; box-shadow:0 0 0 999px rgba(0,0,0,0.4); }
+            50% { border-color:var(--primary-color); box-shadow:0 0 0 999px rgba(0,0,0,0.5), 0 0 20px rgba(229,57,53,0.5); }
+        }
+        .qr-status {
+            text-align:center; font-size:0.9rem; color:#555; margin-bottom:12px;
+            min-height:24px; font-weight:500;
+        }
+        .qr-status.success { color:#27ae60; }
+        .qr-status.error { color:#e74c3c; }
+        .qr-hint { text-align:center; font-size:0.8rem; color:#999; margin-top:8px; }
+
+        /* Canvas hidden — used for pixel analysis */
+        #qr-canvas { display:none; }
+    </style>
 </head>
 <body class="login-bg">
     <div class="login-container">
@@ -17,7 +60,14 @@
                 <p id="login-subtext">Secure Academic Portal — 2FA Enabled</p>
                 <a href="/" style="font-size:0.8rem;color:#888;text-decoration:none;margin-top:4px;display:inline-block;">← Back to Home</a>
             </div>
-            
+
+            <!-- Mode tabs -->
+            <div class="login-tabs">
+                <button class="login-tab active" id="tab-password" onclick="switchLoginTab('password')">🔑 Password</button>
+                <button class="login-tab" id="tab-qr" onclick="switchLoginTab('qr')">📷 QR Code</button>
+            </div>
+
+            <!-- Password Login -->
             <div id="login-form-wrapper">
                 <form id="login-form">
                     <div class="input-group">
@@ -33,6 +83,7 @@
                 </form>
             </div>
 
+            <!-- OTP Verification -->
             <div id="otp-form-wrapper" class="hidden">
                 <form id="otp-form">
                     <div class="input-group center-text">
@@ -46,7 +97,126 @@
                     <p id="otp-message" class="error-msg"></p>
                 </form>
             </div>
+
+            <!-- QR Scanner -->
+            <div id="qr-form-wrapper" class="hidden">
+                <div class="qr-scanner-wrapper">
+                    <video id="qr-video" autoplay playsinline muted></video>
+                    <canvas id="qr-canvas"></canvas>
+                    <div class="qr-overlay">
+                        <div class="qr-frame"></div>
+                    </div>
+                </div>
+                <p class="qr-status" id="qr-status">📷 Point your QR card at the camera...</p>
+                <p class="qr-hint">Hold your personal QR ID card steady inside the frame</p>
+            </div>
         </div>
     </div>
+
+    <script>
+        // Tab switching
+        function switchLoginTab(tab) {
+            const pwdWrapper = document.getElementById('login-form-wrapper');
+            const qrWrapper = document.getElementById('qr-form-wrapper');
+            const tabPwd = document.getElementById('tab-password');
+            const tabQr = document.getElementById('tab-qr');
+
+            if (tab === 'password') {
+                pwdWrapper.classList.remove('hidden');
+                qrWrapper.classList.add('hidden');
+                tabPwd.classList.add('active');
+                tabQr.classList.remove('active');
+                stopQRScanner();
+            } else {
+                pwdWrapper.classList.add('hidden');
+                qrWrapper.classList.remove('hidden');
+                tabPwd.classList.remove('active');
+                tabQr.classList.add('active');
+                startQRScanner();
+            }
+        }
+
+        let qrStream = null;
+        let qrAnimFrame = null;
+        let qrDetected = false;
+
+        async function startQRScanner() {
+            qrDetected = false;
+            const video = document.getElementById('qr-video');
+            const status = document.getElementById('qr-status');
+            try {
+                qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = qrStream;
+                video.play();
+                video.addEventListener('loadedmetadata', scanFrame);
+                status.textContent = '📷 Point your QR card at the camera...';
+                status.className = 'qr-status';
+            } catch (err) {
+                status.textContent = '❌ Camera access denied. Please allow camera permissions.';
+                status.className = 'qr-status error';
+            }
+        }
+
+        function stopQRScanner() {
+            if (qrStream) { qrStream.getTracks().forEach(t => t.stop()); qrStream = null; }
+            if (qrAnimFrame) { cancelAnimationFrame(qrAnimFrame); qrAnimFrame = null; }
+        }
+
+        function scanFrame() {
+            if (qrDetected) return;
+            const video = document.getElementById('qr-video');
+            const canvas = document.getElementById('qr-canvas');
+            const status = document.getElementById('qr-status');
+
+            if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+                qrAnimFrame = requestAnimationFrame(scanFrame);
+                return;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+
+            if (code && code.data) {
+                qrDetected = true;
+                status.textContent = '✅ QR detected! Authenticating...';
+                status.className = 'qr-status success';
+                stopQRScanner();
+                doQRLogin(code.data);
+            } else {
+                qrAnimFrame = requestAnimationFrame(scanFrame);
+            }
+        }
+
+        async function doQRLogin(token) {
+            const status = document.getElementById('qr-status');
+            try {
+                const res = await fetch('/api/auth/qr-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ qrToken: token })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    status.textContent = `✅ Welcome back! Redirecting...`;
+                    status.className = 'qr-status success';
+                    setTimeout(() => window.location.href = data.redirect, 800);
+                } else {
+                    status.textContent = '❌ ' + (data.error || 'Invalid QR code');
+                    status.className = 'qr-status error';
+                    qrDetected = false;
+                    setTimeout(() => startQRScanner(), 2000);
+                }
+            } catch (e) {
+                status.textContent = '❌ Server error. Try again.';
+                status.className = 'qr-status error';
+                qrDetected = false;
+                setTimeout(() => startQRScanner(), 2000);
+            }
+        }
+    </script>
 </body>
 </html>

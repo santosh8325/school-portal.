@@ -146,8 +146,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <h3>Analytics Overview</h3>
                 <canvas id="overviewChart" height="100"></canvas>
             </div>
+
+            <!-- Personal QR ID Card -->
+            <div class="card mt-20" id="qr-card-section" style="text-align:center; max-width:340px; margin:20px auto 0;">
+                <h3 style="color:var(--primary-color); margin-bottom:4px;">📛 My QR ID Card</h3>
+                <p style="font-size:0.82rem; color:#777; margin-bottom:14px;">Scan this at any login terminal for instant hands-free access</p>
+                <div id="qr-code-display" style="display:flex; justify-content:center; margin-bottom:12px;">
+                    <div style="background:#f0f0f0; width:180px; height:180px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#aaa;">Generating...</div>
+                </div>
+                <p style="font-weight:700; font-size:1rem; letter-spacing:1px; margin-bottom:4px;">${currentUser.username.toUpperCase()}</p>
+                <p style="font-size:0.8rem; color:#888; text-transform:uppercase; margin-bottom:14px;">${currentUser.role} · ${schoolConfig.name || 'School Portal'}</p>
+                <button id="download-qr-btn" class="btn-primary" style="width:auto; padding:8px 24px; font-size:0.9rem;" onclick="downloadQRCard()">⬇ Download QR Card</button>
+            </div>
         `;
     }
+
     
     function renderClassDashboard() {
         return `
@@ -507,7 +520,68 @@ Warm regards,
 
     // Bind Events & Charts
     function bindViewEvents(viewId) {
-        if (viewId === 'overview') initOverviewChart();
+        if (viewId === 'overview') {
+            initOverviewChart();
+            // Render personal QR code card
+            fetch('/api/auth/my-qr').then(r => r.json()).then(data => {
+                const display = document.getElementById('qr-code-display');
+                if (!display || !data.qrToken) return;
+                display.innerHTML = '<canvas id="user-qr-canvas"></canvas>';
+                // Use QRCode.js to draw the QR onto the canvas
+                if (window.QRCode) {
+                    new window.QRCode(display, {
+                        text: data.qrToken,
+                        width: 180, height: 180,
+                        colorDark: '#1a1a2e', colorLight: '#ffffff',
+                        correctLevel: window.QRCode.CorrectLevel.H
+                    });
+                } else {
+                    // Fallback: use a free QR API image
+                    display.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(data.qrToken)}" style="border-radius:8px;" alt="QR Code">`;
+                }
+            }).catch(() => {
+                const display = document.getElementById('qr-code-display');
+                if (display) display.innerHTML = '<p style="color:#e74c3c;font-size:0.85rem;">Could not load QR code</p>';
+            });
+
+            // Download QR card as image
+            window.downloadQRCard = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 340; canvas.height = 420;
+                const ctx = canvas.getContext('2d');
+                // Card background
+                ctx.fillStyle = '#1a1a2e';
+                ctx.roundRect(0, 0, 340, 420, 16);
+                ctx.fill();
+                // Header strip
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#e53935';
+                ctx.fillRect(0, 0, 340, 60);
+                // Title
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 18px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('SCHOOL PORTAL ID CARD', 170, 38);
+                // Username
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 22px Inter, sans-serif';
+                ctx.fillText(currentUser.username.toUpperCase(), 170, 310);
+                // Role & school
+                ctx.fillStyle = '#aaaacc';
+                ctx.font = '14px Inter, sans-serif';
+                ctx.fillText(`${currentUser.role.toUpperCase()} · ${(schoolConfig.name || 'School Portal').toUpperCase()}`, 170, 335);
+                ctx.fillText('Scan to login instantly — no password needed', 170, 390);
+                // QR image
+                const qrImg = document.querySelector('#qr-code-display img') || document.querySelector('#qr-code-display canvas');
+                if (qrImg) {
+                    try { ctx.drawImage(qrImg, 80, 70, 180, 180); } catch(e) {}
+                }
+                // Download
+                const link = document.createElement('a');
+                link.download = `${currentUser.username}-qr-card.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+        }
         if (viewId === 'hwChart') initHWChart();
         if (viewId === 'fees') initFeesChart();
 

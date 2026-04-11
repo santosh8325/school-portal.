@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer');
 const db = require('./database');
 const fs = require('fs');
 const xlsx = require('xlsx');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -28,6 +29,21 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '3
 if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
     fs.mkdirSync(path.join(__dirname, 'uploads'));
 }
+
+// QR Token migration — add column and seed tokens for all users without one
+setTimeout(() => {
+    db.run('ALTER TABLE users ADD COLUMN qr_token TEXT', () => {
+        // Generate tokens for any user who doesn't have one yet
+        db.all('SELECT id FROM users WHERE qr_token IS NULL', (err, users) => {
+            if (err || !users) return;
+            users.forEach(u => {
+                const token = crypto.randomBytes(32).toString('hex');
+                db.run('UPDATE users SET qr_token = ? WHERE id = ?', [token, u.id]);
+            });
+            if (users.length > 0) console.log(`[QR] Generated tokens for ${users.length} user(s).`);
+        });
+    });
+}, 2000);
 
 // Session configuration
 app.use(session({
@@ -255,6 +271,40 @@ app.post('/api/auth/verify-otp', (req, res) => {
 app.post('/api/auth/logout', (req, res) => {
     req.session.destroy();
     res.json({ message: 'Logged out successfully' });
+});
+
+// QR Login — instant session from scanned token (no password/OTP needed)
+app.post('/api/auth/qr-login', (req, res) => {
+    const { qrToken } = req.body;
+    if (!qrToken) return res.status(400).json({ error: 'No QR token provided' });
+
+    db.get("SELECT * FROM users WHERE qr_token = ? AND status = 'Active'", [qrToken], (err, user) => {
+        if (err || !user) return res.status(401).json({ error: 'Invalid or expired QR code' });
+
+        // Create session exactly like OTP login
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        req.session.role = user.role;
+        req.session.className = user.class_name;
+        req.session.schoolId = user.school_id;
+
+        db.run("INSERT INTO activity_logs (user_id, action, module, details) VALUES (?, ?, ?, ?)",
+            [user.id, 'LOGIN', 'auth', 'QR Code login']);
+
+        let redirectUrl = '/dashboard.html';
+        if (user.role === 'admin') redirectUrl = '/admin.html';
+        else if (user.school_id) redirectUrl = `/school/${user.school_id}/dashboard`;
+
+        res.json({ message: 'QR Login successful', role: user.role, redirect: redirectUrl });
+    });
+});
+
+// Return current user's QR token (for displaying their personal QR card in dashboard)
+app.get('/api/auth/my-qr', requireAuth(['principal', 'teacher', 'parent', 'student', 'admin']), (req, res) => {
+    db.get('SELECT qr_token, username, role FROM users WHERE id = ?', [req.session.userId], (err, user) => {
+        if (err || !user) return res.status(500).json({ error: 'Could not fetch QR token' });
+        res.json({ qrToken: user.qr_token, username: user.username, role: user.role });
+    });
 });
 
 // API: User Session Data

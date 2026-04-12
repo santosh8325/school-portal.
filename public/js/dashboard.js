@@ -102,13 +102,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
         if (viewId === 'classDashboard') {
-            const data = await fetch(`${apiBase}/teacher/class-stats`).then(r => r.json());
-            branding('st-count', data.totalStudents);
+            try {
+                const data = await fetch(`${apiBase}/teacher/class-stats`).then(r => r.json());
+                branding('st-count', data.totalStudents);
+            } catch (err) {
+                console.error(err);
+                branding('st-count', 'Error');
+            }
         }
         if (viewId === 'studentManager' || viewId === 'attendance') {
-            const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
             const list = document.getElementById(viewId === 'studentManager' ? 'student-list' : 'att-list');
-            list.innerHTML = students.map(s => `<div class="hierarchy-item"><span>${s.username}</span><span>${s.status || 'Active'}</span></div>`).join('');
+            try {
+                const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
+                list.innerHTML = students.map(s => `<div class="hierarchy-item"><span>${s.username}</span><span>${s.status || 'Active'}</span></div>`).join('');
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<p>Error loading students.</p>';
+            }
+        }
+        if (viewId === 'crossClass') {
+            const list = document.getElementById('cc-list');
+            try {
+                const requests = await fetch(`${apiBase}/requests/cross-class`).then(r => r.json());
+                list.innerHTML = requests.length ? requests.map(r => `<div class="hierarchy-item"><span>Class: ${r.requested_class}</span><span>${r.status}</span></div>`).join('') : '<p>No exchange requests.</p>';
+            } catch (err) {
+                console.error(err);
+                list.innerHTML = '<p>Error loading exchange requests.</p>';
+            }
         }
     }
 

@@ -97,6 +97,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => {
             switch(viewId) {
                 case 'overview': viewContainer.innerHTML = `<h2>Overview</h2><div class="card"><p>Welcome, ${currentUser.username}.</p></div>`; break;
+                case 'staffManager': viewContainer.innerHTML = `<h2>Staff Management</h2><div id="staff-list" class="card">Loading...</div>`; break;
+                case 'logs': viewContainer.innerHTML = `<h2>Security Logs</h2><div id="sec-logs" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
+                case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
                 case 'studentAnalysis': viewContainer.innerHTML = `<h2>Academic Performance</h2><div class="card"><canvas id="radarChart"></canvas></div>`; break;
                 case 'classDashboard': viewContainer.innerHTML = `<h2>Class Intelligence</h2><div class="grid-3 gap-20"><div class="card stat-card"><h3>Students</h3><h2 id="st-count">--</h2></div><div class="card stat-card"><h3>Class Avg</h3><h2>92%</h2></div><div class="card stat-card"><h3>HW Pending</h3><h2>3</h2></div></div>`; break;
                 case 'studentManager': viewContainer.innerHTML = `<h2>Student Roster</h2><div id="student-list" class="card">Loading...</div>`; break;
@@ -150,6 +153,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await fetch(`${apiBase}/teacher/class-stats`).then(r => r.json());
             branding('st-count', data.totalStudents);
         }
+        if (viewId === 'staffManager') {
+            const staff = await fetch(`${apiBase}/principal/staff`).then(r => r.json());
+            const list = document.getElementById('staff-list');
+            list.innerHTML = staff.length ? staff.map(s => `<div class="hierarchy-item"><span><b>${s.username}</b> (${s.email})</span><span class="badge">${s.role}</span></div>`).join('') : '<p>No staff found.</p>';
+        }
+
+        if (viewId === 'logs') {
+            const logs = await fetch(`${apiBase}/principal/logs`).then(r => r.json());
+            const list = document.getElementById('sec-logs');
+            list.innerHTML = logs.length ? logs.map(l => `<div style="padding:10px; border-bottom:1px solid #eee;"><strong>${l.username}</strong> performed <i>${l.action}</i> on ${l.module} <br><span style="font-size:0.75rem;color:#888;">${new Date(l.created_at).toLocaleString()}</span></div>`).join('') : '<p>No logs found.</p>';
+        }
+
+        if (viewId === 'homework') {
+            const hw = await fetch(`${apiBase}/teacher/homework`).then(r => r.json());
+            const list = document.getElementById('hw-list');
+            list.innerHTML = hw.length ? hw.map(h => `<div style="padding:10px; border-bottom:1px solid #eee;"><strong>${h.title}</strong> (Class: ${h.class_name})<br><p style="margin:5px 0; font-size:0.9rem;">${h.description}</p><span style="font-size:0.75rem;color:#888;">Due: ${new Date(h.due_date).toLocaleDateString()}</span></div>`).join('') : '<p style="color:#666;">No homework assigned yet. Add one in the Teacher Portal.</p>';
+        }
+
         if (viewId === 'studentManager' || viewId === 'attendance') {
             const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
             const list = document.getElementById(viewId === 'studentManager' ? 'student-list' : 'att-list');

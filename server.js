@@ -145,6 +145,27 @@ app.post('/api/requests/cross-class', requireAuth(['teacher']), (req, res) => {
     db.run("INSERT INTO cross_class_requests (teacher_id, requested_class, school_id) VALUES (?, ?, ?)", [req.session.userId, requestedClass, req.session.schoolId], () => res.json({ message: 'Success' }));
 });
 
+// --- NEW PRINCIPAL APIs ---
+
+app.get('/api/principal/staff', requireAuth(['principal']), (req, res) => {
+    db.all("SELECT id, username, email, role, class_name, status FROM users WHERE role IN ('teacher', 'staff', 'admin_staff') AND school_id = ?", [req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
+app.get('/api/principal/logs', requireAuth(['principal']), (req, res) => {
+    db.all(`
+        SELECT a.*, u.username 
+        FROM activity_logs a 
+        JOIN users u ON a.user_id = u.id 
+        WHERE u.school_id = ? 
+        ORDER BY a.created_at DESC 
+        LIMIT 50
+    `, [req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
+app.get('/api/teacher/homework', requireAuth(['teacher']), (req, res) => {
+    db.all("SELECT * FROM homework WHERE teacher_id = ? ORDER BY created_at DESC", [req.session.userId], (err, rows) => res.json(rows || []));
+});
+
 // --- CHARTFY APIs ---
 
 app.get('/api/chartfy/users', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {

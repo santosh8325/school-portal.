@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { id: 'overview', label: 'Overview', icon: '📊' },
             { id: 'staffManager', label: 'Staff', icon: '👥' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' },
+            { id: 'chatAudit', label: 'Chat Audit', icon: '👁️' },
             { id: 'logs', label: 'Security', icon: '📋' }
         ],
         teacher: [
@@ -105,36 +106,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'studentManager': viewContainer.innerHTML = `<h2>Student Roster</h2><div id="student-list" class="card">Loading...</div>`; break;
                 case 'attendance': viewContainer.innerHTML = `<h2>Live Attendance</h2><div id="att-list" class="card">Loading...</div>`; break;
                 case 'crossClass': viewContainer.innerHTML = `<h2>Exchange Requests</h2><div id="cc-list" class="card">Loading...</div>`; break;
+                case 'chatAudit':
+                    viewContainer.innerHTML = `<h2>Chartfy Oversight (Principal)</h2>
+                    <div class="grid-2 gap-20">
+                        <div class="card" style="display:flex; flex-direction:column; height:60vh;">
+                            <h3 style="margin-bottom:10px;">Audit Log (All School)</h3>
+                            <div id="cf-audit-area" style="flex:1; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:8px;">Loading...</div>
+                            <div style="margin-top:10px; font-size:0.8rem; color:#666;"><i>Real-time school-wide messaging activity.</i></div>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:10px;">Information</h3>
+                            <p style="color:#666; font-size:0.9rem;">As a Principal, you have read-only audit access across the entire school in this MVP to monitor communications. Use the "Chartfy" tab to send messages yourself.</p>
+                        </div>
+                    </div>`;
+                    break;
                 case 'chartfy':
-                    if (currentUser.role === 'principal') {
-                        viewContainer.innerHTML = `<h2>Chartfy Oversight (Principal)</h2>
-                        <div class="grid-2 gap-20">
-                            <div class="card"><h3 style="margin-bottom:10px;">Select Users to Message</h3><div id="cf-users-list">Loading directory...</div></div>
-                            <div class="card" style="display:flex; flex-direction:column; height:60vh;">
-                                <h3 style="margin-bottom:10px;">Audit Log (All School)</h3>
-                                <div id="cf-audit-area" style="flex:1; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:8px;">Loading...</div>
-                                <div style="margin-top:10px; font-size:0.8rem; color:#666;"><i>Real-time school-wide messaging activity.</i></div>
+                    viewContainer.innerHTML = `<h2>Chartfy</h2>
+                    <div class="grid-2 gap-20" style="grid-template-columns: 1fr 2fr;">
+                        <div class="card">
+                            <h3 style="margin-bottom:10px;">Directory</h3>
+                            <div id="cf-users-list" style="max-height:60vh; overflow-y:auto;">Loading directory...</div>
+                        </div>
+                        <div class="card" style="display:flex; flex-direction:column; height:60vh;">
+                            <h3 id="cf-chat-title" style="margin-bottom:10px;">Select a user to chat</h3>
+                            <div id="cf-chat-area" style="flex:1; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
+                                <div style="margin:auto; color:#ccc;">No conversation selected.</div>
                             </div>
-                        </div>`;
-                    } else {
-                        viewContainer.innerHTML = `<h2>Chartfy</h2>
-                        <div class="grid-2 gap-20" style="grid-template-columns: 1fr 2fr;">
-                            <div class="card">
-                                <h3 style="margin-bottom:10px;">Directory</h3>
-                                <div id="cf-users-list" style="max-height:60vh; overflow-y:auto;">Loading directory...</div>
+                            <div style="margin-top:10px; display:flex; gap:10px;">
+                                <input type="text" id="cf-msg-input" placeholder="Type a message or a link..." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;" disabled>
+                                <button id="cf-send-btn" class="btn-primary" disabled>Send</button>
                             </div>
-                            <div class="card" style="display:flex; flex-direction:column; height:60vh;">
-                                <h3 id="cf-chat-title" style="margin-bottom:10px;">Select a user to chat</h3>
-                                <div id="cf-chat-area" style="flex:1; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
-                                    <div style="margin:auto; color:#ccc;">No conversation selected.</div>
-                                </div>
-                                <div style="margin-top:10px; display:flex; gap:10px;">
-                                    <input type="text" id="cf-msg-input" placeholder="Type a message or a link..." style="flex:1; padding:10px; border:1px solid #ccc; border-radius:6px;" disabled>
-                                    <button id="cf-send-btn" class="btn-primary" disabled>Send</button>
-                                </div>
-                            </div>
-                        </div>`;
-                    }
+                        </div>
+                    </div>`;
                     break;
                 default: viewContainer.innerHTML = `<h2>${viewId}</h2><p>Coming Soon.</p>`;
             }
@@ -177,86 +180,92 @@ document.addEventListener('DOMContentLoaded', async () => {
             list.innerHTML = students.map(s => `<div class="hierarchy-item"><span>${s.username}</span><span>${s.status || 'Active'}</span></div>`).join('');
         }
         
+        if (viewId === 'chatAudit' && currentUser.role === 'principal') {
+            const formatLinks = (text) => {
+                if (!text) return '';
+                return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:underline;">$1</a>');
+            };
+            
+            const fetchAudit = async () => {
+                const logs = await fetch(`${apiBase}/chartfy/audit`).then(r => r.json());
+                const area = document.getElementById('cf-audit-area');
+                if(area) area.innerHTML = logs.map(m => `<div style="padding:8px; border-bottom:1px solid #eee;"><strong>${m.sender_name}</strong> &rarr; <strong>${m.receiver_name}</strong>: ${formatLinks(m.message_text)} <div style="font-size:0.7em; color:#888;">${new Date(m.created_at).toLocaleString()}</div></div>`).join('');
+                if (logs.length === 0 && area) area.innerHTML = `<div style="color:#666;">No messages found in your school.</div>`;
+            };
+            fetchAudit();
+            window.chartfyInterval = setInterval(fetchAudit, 5000); 
+        }
+        
         if (viewId === 'chartfy') {
             const formatLinks = (text) => {
                 if (!text) return '';
                 return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:inherit; text-decoration:underline;">$1</a>');
             };
             
-            if (currentUser.role === 'principal') {
-                const fetchAudit = async () => {
-                    const logs = await fetch(`${apiBase}/chartfy/audit`).then(r => r.json());
-                    const area = document.getElementById('cf-audit-area');
-                    if(area) area.innerHTML = logs.map(m => `<div style="padding:8px; border-bottom:1px solid #eee;"><strong>${m.sender_name}</strong> &rarr; <strong>${m.receiver_name}</strong>: ${formatLinks(m.message_text)} <div style="font-size:0.7em; color:#888;">${new Date(m.created_at).toLocaleString()}</div></div>`).join('');
-                    if (logs.length === 0 && area) area.innerHTML = `<div style="color:#666;">No messages found in your school.</div>`;
-                };
-                fetchAudit();
-                window.chartfyInterval = setInterval(fetchAudit, 5000); 
+            let currentPeer = null;
 
-                document.getElementById('cf-users-list').innerHTML = `<p style="color:#666; font-size:0.9rem; padding:10px;">As a Principal, you have read-only audit access across the entire school in this MVP to monitor communications.</p>`;
-            } else {
-                let currentPeer = null;
+            const users = await fetch(`${apiBase}/chartfy/users`).then(r => r.json());
+            const list = document.getElementById('cf-users-list');
+            list.innerHTML = users.map(u => `
+                <div class="hierarchy-item" style="cursor:pointer; padding:10px; border-radius:6px; margin-bottom:5px; transition:0.2s;" onclick="window.loadChat(${u.id}, '${u.username}')">
+                    <span>👤 <b>${u.username}</b></span><span class="badge" style="font-size:0.7rem;">${u.role}</span>
+                </div>`).join('');
+            if (users.length === 0 && list) list.innerHTML = `<p style="color:#ccc;">No users found to chat with.</p>`;
 
-                const users = await fetch(`${apiBase}/chartfy/users`).then(r => r.json());
-                const list = document.getElementById('cf-users-list');
-                list.innerHTML = users.map(u => `
-                    <div class="hierarchy-item" style="cursor:pointer; padding:10px; border-radius:6px; margin-bottom:5px; transition:0.2s;" onclick="window.loadChat(${u.id}, '${u.username}')">
-                        <span>👤 <b>${u.username}</b></span><span class="badge" style="font-size:0.7rem;">${u.role}</span>
-                    </div>`).join('');
-                if (users.length === 0) list.innerHTML = `<p style="color:#ccc;">No users found to chat with.</p>`;
+            window.loadChat = (peerId, peerName) => {
+                const title = document.getElementById('cf-chat-title');
+                if(title) title.innerText = `Chat with ${peerName}`;
+                const inp = document.getElementById('cf-msg-input');
+                if(inp) inp.disabled = false;
+                const btn = document.getElementById('cf-send-btn');
+                if(btn) btn.disabled = false;
+                if(inp) inp.focus();
+                currentPeer = peerId;
+                fetchChat();
+            };
 
-                window.loadChat = (peerId, peerName) => {
-                    document.getElementById('cf-chat-title').innerText = `Chat with ${peerName}`;
-                    document.getElementById('cf-msg-input').disabled = false;
-                    document.getElementById('cf-send-btn').disabled = false;
-                    document.getElementById('cf-msg-input').focus();
-                    currentPeer = peerId;
-                    fetchChat();
-                };
+            let wasScrolledToBottom = true;
 
-                // Track scroll state internally so auto-refresh doesn't fight the user scrolling up to read
-                let wasScrolledToBottom = true;
+            const fetchChat = async () => {
+                if (!currentPeer) return;
+                const msgs = await fetch(`${apiBase}/chartfy/messages/${currentPeer}`).then(r => r.json());
+                const area = document.getElementById('cf-chat-area');
+                if (area) {
+                    const tolerance = 10;
+                    wasScrolledToBottom = area.scrollHeight - area.scrollTop - area.clientHeight <= tolerance;
 
-                const fetchChat = async () => {
-                    if (!currentPeer) return;
-                    const msgs = await fetch(`${apiBase}/chartfy/messages/${currentPeer}`).then(r => r.json());
-                    const area = document.getElementById('cf-chat-area');
-                    if (area) {
-                        const tolerance = 10;
-                        wasScrolledToBottom = area.scrollHeight - area.scrollTop - area.clientHeight <= tolerance;
-
-                        area.innerHTML = msgs.length ? msgs.map(m => {
-                            const isMe = m.sender_id === currentUser.id;
-                            return `<div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--primary-color, #0f3c5f)' : '#e0e0e0'}; color: ${isMe ? '#fff' : '#000'}; padding: 8px 12px; border-radius: 12px; max-width: 80%; word-break: break-word; text-align: left;">
-                                <div style="font-weight:bold; font-size:0.75rem; margin-bottom:4px; opacity:0.8;">${isMe ? 'You' : 'Them'} - ${new Date(m.created_at).toLocaleTimeString()}</div>
-                                <div style="white-space: pre-wrap;">${formatLinks(m.message_text)}</div>
-                            </div>`;
-                        }).join('') : `<div style="margin:auto; color:#ccc;">Say hi to start the conversation!</div>`;
-                        
-                        if (wasScrolledToBottom) {
-                            area.scrollTop = area.scrollHeight;
-                        }
+                    area.innerHTML = msgs.length ? msgs.map(m => {
+                        const isMe = m.sender_id === currentUser.id;
+                        return `<div style="align-self: ${isMe ? 'flex-end' : 'flex-start'}; background: ${isMe ? 'var(--primary-color, #0f3c5f)' : '#e0e0e0'}; color: ${isMe ? '#fff' : '#000'}; padding: 8px 12px; border-radius: 12px; max-width: 80%; word-break: break-word; text-align: left;">
+                            <div style="font-weight:bold; font-size:0.75rem; margin-bottom:4px; opacity:0.8;">${isMe ? 'You' : 'Them'} - ${new Date(m.created_at).toLocaleTimeString()}</div>
+                            <div style="white-space: pre-wrap;">${formatLinks(m.message_text)}</div>
+                        </div>`;
+                    }).join('') : `<div style="margin:auto; color:#ccc;">Say hi to start the conversation!</div>`;
+                    
+                    if (wasScrolledToBottom) {
+                        area.scrollTop = area.scrollHeight;
                     }
-                };
+                }
+            };
 
-                window.chartfyInterval = setInterval(fetchChat, 2000);
+            window.chartfyInterval = setInterval(fetchChat, 2000);
 
-                const sendBtn = document.getElementById('cf-send-btn');
-                const msgInput = document.getElementById('cf-msg-input');
-                const sendMsg = async () => {
-                    const txt = msgInput.value.trim();
-                    if (!txt || !currentPeer) return;
-                    msgInput.value = '';
-                    await fetch(`${apiBase}/chartfy/messages`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ receiverId: currentPeer, message: txt })
-                    });
-                    fetchChat();
-                };
-                sendBtn.onclick = sendMsg;
-                msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMsg(); };
-            }
+            const sendBtn = document.getElementById('cf-send-btn');
+            const msgInput = document.getElementById('cf-msg-input');
+            const sendMsg = async () => {
+                if (!msgInput) return;
+                const txt = msgInput.value.trim();
+                if (!txt || !currentPeer) return;
+                msgInput.value = '';
+                await fetch(`${apiBase}/chartfy/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ receiverId: currentPeer, message: txt })
+                });
+                fetchChat();
+            };
+            if(sendBtn) sendBtn.onclick = sendMsg;
+            if(msgInput) msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMsg(); };
         }
     }
 

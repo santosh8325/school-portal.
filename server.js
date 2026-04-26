@@ -145,6 +145,44 @@ app.post('/api/requests/cross-class', requireAuth(['teacher']), (req, res) => {
     db.run("INSERT INTO cross_class_requests (teacher_id, requested_class, school_id) VALUES (?, ?, ?)", [req.session.userId, requestedClass, req.session.schoolId], () => res.json({ message: 'Success' }));
 });
 
+// --- CHARTFY APIs ---
+
+app.get('/api/chartfy/users', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {
+    db.all("SELECT id, username, role FROM users WHERE school_id = ? AND id != ?", [req.session.schoolId, req.session.userId], (err, rows) => {
+        res.json(rows || []);
+    });
+});
+
+app.get('/api/chartfy/messages/:peerId', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {
+    const peerId = req.params.peerId;
+    db.all("SELECT * FROM chat_messages WHERE school_id = ? AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) ORDER BY created_at ASC", 
+        [req.session.schoolId, req.session.userId, peerId, peerId, req.session.userId], 
+        (err, rows) => res.json(rows || [])
+    );
+});
+
+app.post('/api/chartfy/messages', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {
+    const { receiverId, message } = req.body;
+    db.run("INSERT INTO chat_messages (school_id, sender_id, receiver_id, message_text) VALUES (?, ?, ?, ?)", 
+        [req.session.schoolId, req.session.userId, receiverId, message], 
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, messageId: this.lastID });
+        }
+    );
+});
+
+app.get('/api/chartfy/audit', requireAuth(['principal']), (req, res) => {
+    db.all(`
+        SELECT c.*, s.username as sender_name, r.username as receiver_name 
+        FROM chat_messages c
+        JOIN users s ON c.sender_id = s.id
+        JOIN users r ON c.receiver_id = r.id
+        WHERE c.school_id = ?
+        ORDER BY c.created_at DESC LIMIT 200
+    `, [req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
 // --- HTML ROUTES ---
 
 app.get('/school/:schoolId/dashboard', (req, res) => {

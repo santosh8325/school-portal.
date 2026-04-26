@@ -234,6 +234,19 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY(student_id) REFERENCES users(id)
             )`);
 
+            // Chat Messages table
+            db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                school_id INTEGER,
+                sender_id INTEGER,
+                receiver_id INTEGER,
+                message_text TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(school_id) REFERENCES schools(id),
+                FOREIGN KEY(sender_id) REFERENCES users(id),
+                FOREIGN KEY(receiver_id) REFERENCES users(id)
+            )`);
+
             // Tutors table
             db.run(`CREATE TABLE IF NOT EXISTS tutors (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

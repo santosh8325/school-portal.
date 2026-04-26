@@ -123,12 +123,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'chartfy':
                     viewContainer.innerHTML = `<h2>Chartfy</h2>
                     <div class="grid-2 gap-20" style="grid-template-columns: 1fr 2fr;">
-                        <div class="card">
-                            <h3 style="margin-bottom:10px;">Directory</h3>
-                            <div id="cf-users-list" style="max-height:60vh; overflow-y:auto;">Loading directory...</div>
+                        <div class="card" style="display:flex; flex-direction:column; height:60vh;">
+                            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                                <input type="text" id="cf-lookup-input" placeholder="Enter Exact Username..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px;">
+                                <button id="cf-lookup-btn" class="btn-primary" style="padding:8px 12px;">Start</button>
+                            </div>
+                            <h3 style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">Inbox</h3>
+                            <div id="cf-users-list" style="flex:1; overflow-y:auto;">Loading inbox...</div>
                         </div>
                         <div class="card" style="display:flex; flex-direction:column; height:60vh;">
-                            <h3 id="cf-chat-title" style="margin-bottom:10px;">Select a user to chat</h3>
+                            <h3 id="cf-chat-title" style="margin-bottom:10px;">Select a conversation</h3>
                             <div id="cf-chat-area" style="flex:1; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:8px; display:flex; flex-direction:column; gap:10px;">
                                 <div style="margin:auto; color:#ccc;">No conversation selected.</div>
                             </div>
@@ -204,13 +208,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             let currentPeer = null;
 
-            const users = await fetch(`${apiBase}/chartfy/users`).then(r => r.json());
-            const list = document.getElementById('cf-users-list');
-            list.innerHTML = users.map(u => `
-                <div class="hierarchy-item" style="cursor:pointer; padding:10px; border-radius:6px; margin-bottom:5px; transition:0.2s;" onclick="window.loadChat(${u.id}, '${u.username}')">
-                    <span>👤 <b>${u.username}</b></span><span class="badge" style="font-size:0.7rem;">${u.role}</span>
-                </div>`).join('');
-            if (users.length === 0 && list) list.innerHTML = `<p style="color:#ccc;">No users found to chat with.</p>`;
+            const loadInbox = async () => {
+                const users = await fetch(`${apiBase}/chartfy/conversations`).then(r => r.json());
+                const list = document.getElementById('cf-users-list');
+                if(!list) return;
+                list.innerHTML = users.map(u => `
+                    <div class="hierarchy-item" style="cursor:pointer; padding:10px; border-radius:6px; margin-bottom:5px; transition:0.2s; background:${currentPeer === u.id ? '#e9ecef' : 'transparent'};" onclick="window.loadChat(${u.id}, '${u.username}')">
+                        <span>👤 <b>${u.username}</b></span><span class="badge" style="font-size:0.7rem;">${u.role}</span>
+                    </div>`).join('');
+                if (users.length === 0) list.innerHTML = `<p style="color:#ccc; font-size:0.9rem;">No active conversations.</p>`;
+            };
+            loadInbox();
+
+            const lookupBtn = document.getElementById('cf-lookup-btn');
+            const lookupInput = document.getElementById('cf-lookup-input');
+            const handleLookup = async () => {
+                const username = lookupInput.value.trim();
+                if(!username) return;
+                const r = await fetch(`${apiBase}/chartfy/lookup`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
+                });
+                const data = await r.json();
+                if(!r.ok) { alert(data.error); return; }
+                lookupInput.value = '';
+                window.loadChat(data.id, data.username);
+                // Temporarily add them to the top of inbox so it looks seamless
+                const list = document.getElementById('cf-users-list');
+                const tempHTML = `
+                    <div class="hierarchy-item" style="cursor:pointer; padding:10px; border-radius:6px; margin-bottom:5px; transition:0.2s; background:#e9ecef;" onclick="window.loadChat(${data.id}, '${data.username}')">
+                        <span>👤 <b>${data.username}</b></span><span class="badge" style="font-size:0.7rem;">${data.role}</span>
+                    </div>`;
+                if(list.innerHTML.includes('No active conversations')) list.innerHTML = '';
+                if(!list.innerHTML.includes(data.username)) list.innerHTML = tempHTML + list.innerHTML;
+            };
+            if(lookupBtn) lookupBtn.onclick = handleLookup;
+            if(lookupInput) lookupInput.onkeypress = (e) => { if(e.key === 'Enter') handleLookup(); };
 
             window.loadChat = (peerId, peerName) => {
                 const title = document.getElementById('cf-chat-title');
@@ -221,6 +253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if(btn) btn.disabled = false;
                 if(inp) inp.focus();
                 currentPeer = peerId;
+                loadInbox(); // Refresh highlighting
                 fetchChat();
             };
 
@@ -262,6 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ receiverId: currentPeer, message: txt })
                 });
+                loadInbox(); // Refresh inbox list just in case it's a new conversation
                 fetchChat();
             };
             if(sendBtn) sendBtn.onclick = sendMsg;

@@ -168,10 +168,28 @@ app.get('/api/teacher/homework', requireAuth(['teacher']), (req, res) => {
 
 // --- CHARTFY APIs ---
 
-app.get('/api/chartfy/users', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {
-    db.all("SELECT id, username, role FROM users WHERE school_id = ? AND id != ?", [req.session.schoolId, req.session.userId], (err, rows) => {
+app.get('/api/chartfy/conversations', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {
+    db.all(`
+        SELECT DISTINCT u.id, u.username, u.role
+        FROM users u
+        JOIN chat_messages c ON (c.sender_id = u.id OR c.receiver_id = u.id)
+        WHERE u.id != ? AND u.school_id = ? 
+          AND (c.sender_id = ? OR c.receiver_id = ?)
+    `, [req.session.userId, req.session.schoolId, req.session.userId, req.session.userId], (err, rows) => {
         res.json(rows || []);
     });
+});
+
+app.post('/api/chartfy/lookup', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {
+    const { username } = req.body;
+    db.get("SELECT id, username, role FROM users WHERE username = ? AND school_id = ? AND id != ?", 
+        [username, req.session.schoolId, req.session.userId], 
+        (err, row) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (!row) return res.status(404).json({ error: 'User not found in your school.' });
+            res.json(row);
+        }
+    );
 });
 
 app.get('/api/chartfy/messages/:peerId', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {

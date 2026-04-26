@@ -167,9 +167,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (viewId === 'logs') {
-            const logs = await fetch(`${apiBase}/principal/logs`).then(r => r.json());
-            const list = document.getElementById('sec-logs');
-            list.innerHTML = logs.length ? logs.map(l => `<div style="padding:10px; border-bottom:1px solid #eee;"><strong>${l.username}</strong> performed <i>${l.action}</i> on ${l.module} <br><span style="font-size:0.75rem;color:#888;">${new Date(l.created_at).toLocaleString()}</span></div>`).join('') : '<p>No logs found.</p>';
+            const fetchLogs = async () => {
+                const logs = await fetch(`${apiBase}/principal/logs`).then(r => r.json());
+                const list = document.getElementById('sec-logs');
+                if(list) list.innerHTML = logs.length ? logs.map(l => `<div style="padding:10px; border-bottom:1px solid #eee;"><strong>${l.username}</strong> performed <i>${l.action}</i> on ${l.module} <br><span style="font-size:0.75rem;color:#888;">${new Date(l.created_at).toLocaleString()}</span></div>`).join('') : '<p>No logs found.</p>';
+            };
+            fetchLogs();
+            window.chartfyInterval = setInterval(fetchLogs, 4000); // Live logs polling! We piggyback on interval clears.
         }
 
         if (viewId === 'homework') {

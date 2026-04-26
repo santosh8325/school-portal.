@@ -78,6 +78,8 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 if (!columns.includes('reports_to')) {
                     db.run(`ALTER TABLE users ADD COLUMN reports_to INTEGER`);
                 }
+                
+                db.run(`UPDATE users SET qr_token = 'QR-' || id || '-' || username WHERE qr_token IS NULL`);
             });
 
             // OTP Auth table

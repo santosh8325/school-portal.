@@ -114,6 +114,21 @@ app.post('/api/auth/verify-otp', (req, res) => {
     });
 });
 
+app.post('/api/auth/qr-login', (req, res) => {
+    const { qrToken } = req.body;
+    if (!qrToken) return res.status(400).json({ error: 'Missing QR Token' });
+    db.get("SELECT * FROM users WHERE qr_token = ?", [qrToken], (err, user) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        if (!user) return res.status(401).json({ error: 'Invalid QR Code' });
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        req.session.role = user.role;
+        req.session.className = user.class_name;
+        req.session.schoolId = user.school_id;
+        res.json({ message: 'Success', role: user.role, redirect: user.role === 'admin' ? '/admin.html' : `/school/${user.school_id}/dashboard` });
+    });
+});
+
 app.post('/api/auth/logout', (req, res) => { req.session.destroy(); res.json({ message: 'Logged out' }); });
 
 app.get('/api/profile', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {

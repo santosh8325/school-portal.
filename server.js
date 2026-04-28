@@ -202,6 +202,8 @@ app.get('/api/teacher/class-stats', requireAuth(['teacher']), (req, res) => {
             });
         });
     });
+});
+
 app.get('/api/teacher/attendance/today', requireAuth(['teacher']), (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     db.all("SELECT student_id, status FROM attendance WHERE class_name = ? AND date = ?", [req.session.className, today], (err, rows) => res.json(rows || []));

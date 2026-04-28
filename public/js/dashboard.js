@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'manageTeacher': viewContainer.innerHTML = `<h2>Manage Teachers</h2><div class="card"><p>Assign classes to teachers to manage their access.</p><div id="mt-list" style="margin-top:10px;">Loading teachers...</div></div>`; break;
                 case 'staffManager': viewContainer.innerHTML = `<h2>Staff Management</h2><div id="staff-list" class="card">Loading...</div>`; break;
                 case 'logs': viewContainer.innerHTML = `<h2>Security Logs</h2><div id="sec-logs" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
-                case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div class="grid-2 gap-20"><div class="card" style="display:flex; flex-direction:column;"><h3 style="margin-bottom:10px;">Assign New Homework</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="text" id="hw-title" placeholder="Homework Title" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><textarea id="hw-desc" placeholder="Details/Description" rows="4" style="padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea><input type="date" id="hw-due" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-submit-btn" class="btn-primary" style="padding:10px;">Assign</button></div></div><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div></div>`; break;
+                case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div class="grid-2 gap-20"><div class="card" style="display:flex; flex-direction:column;"><h3 style="margin-bottom:10px;">Assign New Homework</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="text" id="hw-title" placeholder="Homework Title" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><textarea id="hw-desc" placeholder="Details/Description" rows="4" style="padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea><input type="date" id="hw-due" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-submit-btn" class="btn-primary" style="padding:10px;">Assign</button></div><hr style="margin:15px 0; border:1px solid #eee;"><h3 style="margin-bottom:10px;">Bulk Upload (Excel)</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="file" id="hw-excel-file" accept=".xlsx, .xls" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-excel-btn" style="padding:10px; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Upload Excel</button><span style="font-size:0.75rem; color:#888;">Expected columns: Title, Description, Due Date</span></div></div><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div></div>`; break;
                 case 'studentAnalysis': viewContainer.innerHTML = `<h2>Academic Performance</h2><div class="card"><canvas id="radarChart"></canvas></div>`; break;
                 case 'classDashboard': viewContainer.innerHTML = `<h2>Class Intelligence</h2>
                         <div class="grid-4 gap-20" style="margin-bottom: 20px;">
@@ -317,6 +317,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const err = await res.json();
                         alert("Error: " + err.error);
                     }
+                };
+            }
+
+            const excelBtn = document.getElementById('hw-excel-btn');
+            if (excelBtn) {
+                excelBtn.onclick = async () => {
+                    const fileInput = document.getElementById('hw-excel-file');
+                    const file = fileInput.files[0];
+                    if (!file) return alert("Please select an Excel file first.");
+                    
+                    excelBtn.disabled = true;
+                    excelBtn.textContent = "Uploading...";
+                    
+                    const formData = new FormData();
+                    formData.append('excelFile', file);
+                    
+                    try {
+                        const res = await fetch(`${apiBase}/teacher/homework/bulk`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            alert(`Success! Imported ${data.count} homework assignment(s).`);
+                            fileInput.value = '';
+                            loadHomework();
+                        } else {
+                            const err = await res.json();
+                            alert("Error: " + err.error);
+                        }
+                    } catch (e) {
+                        alert("Error uploading file.");
+                    }
+                    excelBtn.disabled = false;
+                    excelBtn.textContent = "Upload Excel";
                 };
             }
         }

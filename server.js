@@ -291,6 +291,35 @@ app.post('/api/teacher/homework', requireAuth(['teacher']), (req, res) => {
     );
 });
 
+app.post('/api/teacher/homework/bulk', requireAuth(['teacher']), upload.single('excelFile'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    try {
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        
+        let count = 0;
+        data.forEach(row => {
+            const title = row.title || row.Title;
+            const desc = row.description || row.Description || row.details || row.Details || '';
+            let due = row.due_date || row['Due Date'] || row.dueDate || new Date().toISOString().split('T')[0];
+            if (typeof due === 'number') {
+                // Excel dates are number of days since 1900-01-01
+                due = new Date(Math.round((due - 25569)*86400*1000)).toISOString().split('T')[0];
+            }
+            if (title) {
+                db.run("INSERT INTO homework (teacher_id, class_name, title, description, due_date) VALUES (?, ?, ?, ?, ?)", 
+                    [req.session.userId, req.session.className, title, desc, due]);
+                count++;
+            }
+        });
+        fs.unlinkSync(req.file.path);
+        res.json({ success: true, count });
+    } catch (err) {
+        res.status(500).json({ error: 'Error parsing Excel file: ' + err.message });
+    }
+});
+
 // --- CHARTFY APIs ---
 
 app.get('/api/chartfy/conversations', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {

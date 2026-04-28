@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const roleNavs = {
         principal: [
             { id: 'overview', label: 'Overview', icon: '📊' },
+            { id: 'manageTeacher', label: 'Manage Teacher', icon: '👩‍🏫' },
             { id: 'staffManager', label: 'Staff', icon: '👥' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' },
             { id: 'chatAudit', label: 'Chat Audit', icon: '👁️' },
@@ -97,14 +98,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewContainer.innerHTML = `<div class="skeleton skeleton-title"></div><div class="skeleton skeleton-card" style="height:300px;"></div>`;
         setTimeout(() => {
             switch(viewId) {
-                case 'overview': viewContainer.innerHTML = `<h2>Overview</h2><div class="card"><p>Welcome, ${currentUser.username}.</p></div>`; break;
+                case 'overview': 
+                    if (currentUser.role === 'principal') {
+                        viewContainer.innerHTML = `<h2>School-Wide Advanced Analytics</h2>
+                        <div class="grid-4 gap-20" style="margin-bottom: 20px;">
+                            <div class="card stat-card"><h3>Current Enrollment</h3><h2 id="adv-enrollment">--</h2><span id="adv-enrollment-trend"></span></div>
+                            <div class="card stat-card"><h3>Avg Attendance</h3><h2 id="adv-attendance">--</h2><span id="adv-attendance-trend"></span></div>
+                            <div class="card stat-card"><h3>Average GPA</h3><h2 id="adv-gpa">--</h2><span id="adv-gpa-trend"></span></div>
+                            <div class="card stat-card"><h3>Target Completion</h3><h2 id="adv-completion">--</h2><span id="adv-completion-trend"></span></div>
+                        </div>
+                        <div class="grid-2 gap-20" style="margin-bottom: 20px;">
+                            <div class="card"><h3>Subject Performance (Last 3 Terms)</h3><canvas id="performanceChart" style="max-height:250px;"></canvas></div>
+                            <div class="card"><h3>Attendance Heatmap (Chronic Absences)</h3><canvas id="heatmapChart" style="max-height:250px;"></canvas></div>
+                        </div>
+                        <div class="card" style="margin-bottom: 20px;">
+                            <h3>At-Risk Students Action List</h3>
+                            <table style="width:100%; border-collapse: collapse; text-align:left;">
+                                <tr style="border-bottom:2px solid #eee;"><th>Student Name</th><th>Flagged Subject</th><th>Current GPA</th><th>Attendance YTD</th></tr>
+                                <tbody id="adv-atrisk-body"><tr><td colspan="4">Loading...</td></tr></tbody>
+                            </table>
+                        </div>`;
+                    } else if (currentUser.role === 'parent') {
+                        viewContainer.innerHTML = `<h2>Overview</h2><div class="grid-3 gap-20"><div class="card stat-card"><h3>Children</h3><h2 id="ov-children">--</h2></div><div class="card stat-card"><h3>Fees Due</h3><h2 id="ov-fees">--</h2></div><div class="card stat-card"><h3>Pending PTM</h3><h2 id="ov-ptm">--</h2></div></div>`;
+                    } else {
+                        viewContainer.innerHTML = `<h2>Overview</h2><div class="card"><p>Welcome, ${currentUser.username}.</p></div>`;
+                    }
+                    break;
+                case 'manageTeacher': viewContainer.innerHTML = `<h2>Manage Teachers</h2><div class="card"><p>Assign classes to teachers to manage their access.</p><div id="mt-list" style="margin-top:10px;">Loading teachers...</div></div>`; break;
                 case 'staffManager': viewContainer.innerHTML = `<h2>Staff Management</h2><div id="staff-list" class="card">Loading...</div>`; break;
                 case 'logs': viewContainer.innerHTML = `<h2>Security Logs</h2><div id="sec-logs" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
-                case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
+                case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div class="grid-2 gap-20"><div class="card" style="display:flex; flex-direction:column;"><h3 style="margin-bottom:10px;">Assign New Homework</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="text" id="hw-title" placeholder="Homework Title" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><textarea id="hw-desc" placeholder="Details/Description" rows="4" style="padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea><input type="date" id="hw-due" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-submit-btn" class="btn-primary" style="padding:10px;">Assign</button></div></div><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div></div>`; break;
                 case 'studentAnalysis': viewContainer.innerHTML = `<h2>Academic Performance</h2><div class="card"><canvas id="radarChart"></canvas></div>`; break;
-                case 'classDashboard': viewContainer.innerHTML = `<h2>Class Intelligence</h2><div class="grid-3 gap-20"><div class="card stat-card"><h3>Students</h3><h2 id="st-count">--</h2></div><div class="card stat-card"><h3>Class Avg</h3><h2>92%</h2></div><div class="card stat-card"><h3>HW Pending</h3><h2>3</h2></div></div>`; break;
+                case 'classDashboard': viewContainer.innerHTML = `<h2>Class Intelligence</h2>
+                        <div class="grid-4 gap-20" style="margin-bottom: 20px;">
+                            <div class="card stat-card"><h3>Class Size</h3><h2 id="adv-enrollment">--</h2><span id="adv-enrollment-trend"></span></div>
+                            <div class="card stat-card"><h3>Avg Attendance</h3><h2 id="adv-attendance">--</h2><span id="adv-attendance-trend"></span></div>
+                            <div class="card stat-card"><h3>Average GPA</h3><h2 id="adv-gpa">--</h2><span id="adv-gpa-trend"></span></div>
+                            <div class="card stat-card"><h3>Target Completion</h3><h2 id="adv-completion">--</h2><span id="adv-completion-trend"></span></div>
+                        </div>
+                        <div class="grid-2 gap-20" style="margin-bottom: 20px;">
+                            <div class="card"><h3>Subject Performance (Last 3 Terms)</h3><canvas id="performanceChart" style="max-height:250px;"></canvas></div>
+                            <div class="card"><h3>Attendance Heatmap</h3><canvas id="heatmapChart" style="max-height:250px;"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <h3>At-Risk Students (Class)</h3>
+                            <table style="width:100%; text-align:left; border-collapse:collapse;">
+                                <tr style="border-bottom:2px solid #eee;"><th>Name</th><th>Flagged Subject</th><th>GPA</th><th>Attendance</th></tr>
+                                <tbody id="adv-atrisk-body"><tr><td colspan="4">Loading...</td></tr></tbody>
+                            </table>
+                        </div>`; break;
                 case 'studentManager': viewContainer.innerHTML = `<h2>Student Roster</h2><div id="student-list" class="card">Loading...</div>`; break;
-                case 'attendance': viewContainer.innerHTML = `<h2>Live Attendance</h2><div id="att-list" class="card">Loading...</div>`; break;
+                case 'attendance': viewContainer.innerHTML = `<h2>Live Attendance Manager</h2><div class="card"><p>Take attendance for your assigned class today. Select an option carefully.</p><div id="att-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">Loading class roster...</div></div>`; break;
                 case 'crossClass': viewContainer.innerHTML = `<h2>Exchange Requests</h2><div id="cc-list" class="card">Loading...</div>`; break;
                 case 'chatAudit':
                     viewContainer.innerHTML = `<h2>Chartfy Oversight (Principal)</h2>
@@ -156,9 +200,69 @@ document.addEventListener('DOMContentLoaded', async () => {
                 data: { labels: ['Math', 'Sci', 'Eng', 'Hist', 'Art'], datasets: [{ label: 'Class', data: [80, 90, 70, 85, 95], borderColor: 'red' }] }
             });
         }
-        if (viewId === 'classDashboard') {
-            const data = await fetch(`${apiBase}/teacher/class-stats`).then(r => r.json());
-            branding('st-count', data.totalStudents);
+        if ((viewId === 'classDashboard' && currentUser.role === 'teacher') || (viewId === 'overview' && currentUser.role === 'principal')) {
+            const data = await fetch(`${apiBase}/analytics/advanced`).then(r => r.json());
+            
+            // Tier 1: KPIs
+            ['enrollment', 'attendance', 'gpa', 'completion'].forEach(key => {
+                const mapId = key;
+                const d = data.kpis[key === 'completion' ? 'completionRate' : key];
+                branding(`adv-${mapId}`, d.value);
+                const trendEl = document.getElementById(`adv-${mapId}-trend`);
+                if (trendEl) {
+                    const isPositive = d.trend > 0;
+                    const color = (isPositive === d.upIsGood) ? 'green' : 'red';
+                    const icon = isPositive ? '▲' : (d.trend < 0 ? '▼' : '-');
+                    trendEl.style.color = color;
+                    trendEl.innerHTML = `${icon} ${Math.abs(d.trend)}%`;
+                }
+            });
+
+            // Tier 2: Visuals
+            if (window.Chart) {
+                const perfCtx = document.getElementById('performanceChart');
+                if (perfCtx) {
+                    new Chart(perfCtx, {
+                        type: 'line',
+                        data: data.charts.performance,
+                        options: {
+                            responsive: true,
+                            onClick: (evt, elements, chart) => {
+                                if (elements.length > 0) {
+                                    const datasetIndex = elements[0].datasetIndex;
+                                    const subjectLabel = data.charts.performance.datasets[datasetIndex].label;
+                                    // Tier 3: Drill-down filter
+                                    const tbody = document.getElementById('adv-atrisk-body');
+                                    const filtered = data.atRisk.filter(s => s.subject === subjectLabel);
+                                    tbody.innerHTML = filtered.length ? filtered.map(s => `<tr><td style="padding:10px;">${s.name}</td><td style="padding:10px;">${s.subject}</td><td style="padding:10px; color:red;">${s.gpa}</td><td style="padding:10px;">${s.attendance}</td></tr>`).join('') : '<tr><td colspan="4" style="padding:10px;text-align:center;">No students at risk.</td></tr>';
+                                }
+                            }
+                        }
+                    });
+                }
+                const heatCtx = document.getElementById('heatmapChart');
+                if (heatCtx) {
+                    new Chart(heatCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.charts.attendanceHeatmap.labels,
+                            datasets: [{ label: 'Absences', data: data.charts.attendanceHeatmap.data, backgroundColor: '#ff9800' }]
+                        }
+                    });
+                }
+            }
+
+            // Tier 3: Initial Load
+            const tbody = document.getElementById('adv-atrisk-body');
+            if (tbody) {
+                tbody.innerHTML = data.atRisk.map(s => `<tr><td style="padding:10px;">${s.name}</td><td style="padding:10px;">${s.subject}</td><td style="padding:10px; color:red;">${s.gpa}</td><td style="padding:10px;">${s.attendance}</td></tr>`).join('');
+            }
+        }
+        if (viewId === 'overview' && currentUser.role === 'parent') {
+            const data = await fetch(`${apiBase}/parent/overview-stats`).then(r => r.json());
+            branding('ov-children', data.childrenCount);
+            branding('ov-fees', data.feesDue);
+            branding('ov-ptm', data.pendingPtm);
         }
         if (viewId === 'staffManager') {
             const staff = await fetch(`${apiBase}/principal/staff`).then(r => r.json());
@@ -177,15 +281,132 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (viewId === 'homework') {
-            const hw = await fetch(`${apiBase}/teacher/homework`).then(r => r.json());
-            const list = document.getElementById('hw-list');
-            list.innerHTML = hw.length ? hw.map(h => `<div style="padding:10px; border-bottom:1px solid #eee;"><strong>${h.title}</strong> (Class: ${h.class_name})<br><p style="margin:5px 0; font-size:0.9rem;">${h.description}</p><span style="font-size:0.75rem;color:#888;">Due: ${new Date(h.due_date).toLocaleDateString()}</span></div>`).join('') : '<p style="color:#666;">No homework assigned yet. Add one in the Teacher Portal.</p>';
+            const loadHomework = async () => {
+                const hw = await fetch(`${apiBase}/teacher/homework`).then(r => r.json());
+                const list = document.getElementById('hw-list');
+                if (list) {
+                    list.innerHTML = hw.length ? hw.map(h => `<div style="padding:10px; border-bottom:1px solid #eee;"><strong>${h.title}</strong> (Class: ${h.class_name})<br><p style="margin:5px 0; font-size:0.9rem;">${h.description}</p><span style="font-size:0.75rem;color:#888;">Due: ${new Date(h.due_date).toLocaleDateString()}</span></div>`).join('') : '<p style="color:#666;">No homework assigned yet.</p>';
+                }
+            };
+            loadHomework();
+
+            const assignBtn = document.getElementById('hw-submit-btn');
+            if (assignBtn) {
+                assignBtn.onclick = async () => {
+                    const title = document.getElementById('hw-title').value.trim();
+                    const desc = document.getElementById('hw-desc').value.trim();
+                    const due = document.getElementById('hw-due').value;
+                    if (!title || !desc || !due) return alert("Please fill all fields.");
+                    
+                    assignBtn.disabled = true;
+                    assignBtn.textContent = "Assigning...";
+                    const res = await fetch(`${apiBase}/teacher/homework`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, description: desc, due_date: due })
+                    });
+                    assignBtn.disabled = false;
+                    assignBtn.textContent = "Assign";
+                    
+                    if (res.ok) {
+                        document.getElementById('hw-title').value = '';
+                        document.getElementById('hw-desc').value = '';
+                        document.getElementById('hw-due').value = '';
+                        loadHomework();
+                    } else {
+                        const err = await res.json();
+                        alert("Error: " + err.error);
+                    }
+                };
+            }
         }
 
-        if (viewId === 'studentManager' || viewId === 'attendance') {
+        if (viewId === 'studentManager') {
             const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
-            const list = document.getElementById(viewId === 'studentManager' ? 'student-list' : 'att-list');
+            const list = document.getElementById('student-list');
             list.innerHTML = students.map(s => `<div class="hierarchy-item"><span>${s.username}</span><span>${s.status || 'Active'}</span></div>`).join('');
+        }
+        
+        if (viewId === 'attendance') {
+            const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
+            const list = document.getElementById('att-list');
+            const today = new Date().toISOString().split('T')[0];
+            
+            list.innerHTML = students.length ? students.map(s => `
+                <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${s.username}</b></span>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="markAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button>
+                        <button onclick="markAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>
+                    </div>
+                </div>
+            `).join('') : '<p>No students assigned.</p>';
+            
+            window.markAttendance = async (studentId, date, status) => {
+                const res = await fetch(`${apiBase}/teacher/attendance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentId, date, status })
+                });
+                if(res.ok) {
+                    alert(`${status} marked for student ID: ${studentId}`);
+                } else {
+                    alert('Error marking attendance.');
+                }
+            };
+        }
+
+        if (viewId === 'manageTeacher') {
+            const staff = await fetch(`${apiBase}/principal/staff`).then(r => r.json());
+            const teachers = staff.filter(s => s.role === 'teacher');
+            const list = document.getElementById('mt-list');
+            list.innerHTML = teachers.length ? teachers.map(t => `
+                <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${t.username}</b> (Current: ${t.class_name || 'None'})</span>
+                    <div style="display:flex; gap:10px;">
+                        <input type="text" id="assign-class-${t.id}" placeholder="e.g. 10-A" style="padding:5px; border:1px solid #ccc; width:100px;">
+                        <button onclick="assignClass(${t.id})" class="btn-primary" style="padding:5px 10px;">Assign</button>
+                    </div>
+                </div>
+            `).join('') : '<p>No teachers available.</p>';
+            
+            window.assignClass = async (teacherId) => {
+                const className = document.getElementById(`assign-class-${teacherId}`).value.trim();
+                if (!className) return alert("Enter a valid class name.");
+                const res = await fetch(`${apiBase}/principal/assign-class`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ teacherId, className })
+                });
+                if(res.ok) {
+                    alert('Class successfully assigned!');
+                    renderView('manageTeacher'); // reload view
+                } else {
+                    alert('Error assigning class.');
+                }
+            };
+        }
+        
+        if (viewId === 'crossClass') {
+            try {
+                const requests = await fetch(`${apiBase}/requests/cross-class`).then(r => r.json());
+                const list = document.getElementById('cc-list');
+                if (list) {
+                    list.innerHTML = requests.length ? requests.map(req => 
+                        `<div class="hierarchy-item" style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                            <div>
+                                <strong>Request:</strong> Exchange to ${req.requested_class}<br>
+                                <span style="font-size:0.8rem; color:#666;">Status: ${req.status}</span>
+                            </div>
+                            <div style="font-size:0.75rem; color:#999;">${new Date(req.created_at).toLocaleDateString()}</div>
+                        </div>`
+                    ).join('') : '<p style="color:#666; padding:10px;">No exchange requests found.</p>';
+                }
+            } catch (err) {
+                const list = document.getElementById('cc-list');
+                if (list) list.innerHTML = '<p style="color:red; padding:10px;">Error loading requests.</p>';
+                console.error("Exchange fetch error:", err);
+            }
         }
         
         if (viewId === 'chatAudit' && currentUser.role === 'principal') {

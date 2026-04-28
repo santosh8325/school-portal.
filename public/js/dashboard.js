@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { id: 'overview', label: 'Overview', icon: '📊' },
             { id: 'manageTeacher', label: 'Manage Teacher', icon: '👩‍🏫' },
             { id: 'staffManager', label: 'Staff', icon: '👥' },
+            { id: 'staffAttendance', label: 'Attendance', icon: '✅' },
+            { id: 'requests', label: 'Requests', icon: '📬' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' },
             { id: 'chatAudit', label: 'Chat Audit', icon: '👁️' },
             { id: 'logs', label: 'Security', icon: '📋' }
@@ -126,6 +128,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     break;
                 case 'manageTeacher': viewContainer.innerHTML = `<h2>Manage Teachers</h2><div class="card"><p>Assign classes to teachers to manage their access.</p><div id="mt-list" style="margin-top:10px;">Loading teachers...</div></div>`; break;
                 case 'staffManager': viewContainer.innerHTML = `<h2>Staff Management</h2><div id="staff-list" class="card">Loading...</div>`; break;
+                case 'staffAttendance': viewContainer.innerHTML = `<h2>Staff Attendance</h2><div class="card"><p>Mark today's attendance for the teaching staff.</p><div id="staff-att-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">Loading staff roster...</div></div>`; break;
+                case 'requests': viewContainer.innerHTML = `<h2>Pending Requests</h2><div id="principal-req-list" class="card">Loading...</div>`; break;
                 case 'logs': viewContainer.innerHTML = `<h2>Security Logs</h2><div id="sec-logs" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
                 case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div class="grid-2 gap-20"><div class="card" style="display:flex; flex-direction:column;"><h3 style="margin-bottom:10px;">Assign New Homework</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="text" id="hw-title" placeholder="Homework Title" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><textarea id="hw-desc" placeholder="Details/Description" rows="4" style="padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea><input type="date" id="hw-due" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-submit-btn" class="btn-primary" style="padding:10px;">Assign</button></div><hr style="margin:15px 0; border:1px solid #eee;"><h3 style="margin-bottom:10px;">Bulk Upload (Excel)</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="file" id="hw-excel-file" accept=".xlsx, .xls" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-excel-btn" style="padding:10px; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Upload Excel</button><span style="font-size:0.75rem; color:#888;">Expected columns: Title, Description, Due Date</span></div></div><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div></div>`; break;
                 case 'studentAnalysis': viewContainer.innerHTML = `<h2>Academic Performance</h2><div class="card"><canvas id="radarChart"></canvas></div>`; break;
@@ -402,6 +406,97 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                 }
             };
+        }
+
+        if (viewId === 'staffAttendance' && currentUser.role === 'principal') {
+            const staff = await fetch(`${apiBase}/principal/staff`).then(r => r.json());
+            const teachers = staff.filter(s => s.role === 'teacher' || s.role === 'staff');
+            const list = document.getElementById('staff-att-list');
+            const today = new Date().toISOString().split('T')[0];
+            
+            list.innerHTML = teachers.length ? teachers.map(s => `
+                <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><b>${s.username}</b></span>
+                    <div style="display:flex; gap:10px; align-items:center;" id="staff-att-controls-${s.id}">
+                        <button onclick="markStaffAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button>
+                        <button onclick="markStaffAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>
+                    </div>
+                </div>
+            `).join('') : '<p>No teachers assigned.</p>';
+            
+            window.markStaffAttendance = async (studentId, date, status) => {
+                const res = await fetch(`${apiBase}/principal/attendance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentId, date, status })
+                });
+                if(res.ok) {
+                    const ctrl = document.getElementById('staff-att-controls-' + studentId);
+                    if (ctrl) {
+                        ctrl.innerHTML = `<span style="font-weight:bold; color:${status === 'Present' ? 'green' : 'red'}; margin-right:10px;">${status}</span>
+                        <button onclick="resetStaffAttendanceUI(${studentId}, '${date}')" class="btn-secondary" style="padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`;
+                    }
+                } else {
+                    alert('Error marking attendance.');
+                }
+            };
+
+            window.resetStaffAttendanceUI = (studentId, date) => {
+                const ctrl = document.getElementById('staff-att-controls-' + studentId);
+                if (ctrl) {
+                    ctrl.innerHTML = `
+                        <button onclick="markStaffAttendance(${studentId}, '${date}', 'Present')" class="btn-primary" style="background:green;">Present</button>
+                        <button onclick="markStaffAttendance(${studentId}, '${date}', 'Absent')" class="btn-danger">Absent</button>
+                    `;
+                }
+            };
+        }
+
+        if (viewId === 'requests' && currentUser.role === 'principal') {
+            const list = document.getElementById('principal-req-list');
+            try {
+                const reqs = await fetch(`${apiBase}/principal/requests`).then(r => r.json());
+                let html = '';
+                if (reqs.crossClass && reqs.crossClass.length) {
+                    html += `<h3>Cross-Class Requests</h3>` + reqs.crossClass.map(r => `
+                        <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <b>${r.teacher_name}</b> requested: ${r.requested_class}<br>
+                                <span style="font-size:0.8rem; color:${r.status==='Approved'?'green':'orange'};">${r.status}</span>
+                            </div>
+                            ${r.status !== 'Approved' ? `<button onclick="approveRequest('crossClass', ${r.id})" class="btn-primary" style="background:#28a745;">Approve</button>` : `<span style="color:#28a745; font-weight:bold;">Approved</span>`}
+                        </div>
+                    `).join('');
+                }
+                if (reqs.relieving && reqs.relieving.length) {
+                    html += `<h3 style="margin-top:15px;">Relieving Requests</h3>` + reqs.relieving.map(r => `
+                        <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <b>${r.teacher_name}</b> requested relief regarding <b>${r.student_name}</b><br>
+                                <i>"${r.draft_text}"</i><br>
+                                <span style="font-size:0.8rem; color:${r.status==='Approved'?'green':'orange'};">${r.status}</span>
+                            </div>
+                            ${r.status !== 'Approved' ? `<button onclick="approveRequest('relieving', ${r.id})" class="btn-primary" style="background:#28a745;">Approve</button>` : `<span style="color:#28a745; font-weight:bold;">Approved</span>`}
+                        </div>
+                    `).join('');
+                }
+                list.innerHTML = html || '<p>No pending requests.</p>';
+
+                window.approveRequest = async (type, id) => {
+                    const res = await fetch(`${apiBase}/principal/requests/approve`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type, id })
+                    });
+                    if (res.ok) {
+                        renderView('requests');
+                    } else {
+                        alert('Error approving request.');
+                    }
+                };
+            } catch (err) {
+                list.innerHTML = '<p style="color:red;">Error loading requests.</p>';
+            }
         }
 
         if (viewId === 'manageTeacher') {

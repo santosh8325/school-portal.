@@ -265,6 +265,47 @@ app.get('/api/principal/staff', requireAuth(['principal']), (req, res) => {
     db.all("SELECT id, username, email, role, class_name, status FROM users WHERE role IN ('teacher', 'staff', 'admin_staff') AND school_id = ?", [req.session.schoolId], (err, rows) => res.json(rows || []));
 });
 
+app.get('/api/principal/requests', requireAuth(['principal']), (req, res) => {
+    db.all(`
+        SELECT c.id, c.requested_class, c.status, c.created_at, u.username as teacher_name 
+        FROM cross_class_requests c
+        JOIN users u ON c.teacher_id = u.id
+        WHERE c.school_id = ?
+    `, [req.session.schoolId], (err, crossClass) => {
+        db.all(`
+            SELECT r.id, r.draft_text, r.status, r.created_at, t.username as teacher_name, s.username as student_name
+            FROM relieving_requests r
+            JOIN users t ON r.teacher_id = t.id
+            JOIN users s ON r.student_id = s.id
+            WHERE t.school_id = ?
+        `, [req.session.schoolId], (err, relieving) => {
+            res.json({ crossClass: crossClass || [], relieving: relieving || [] });
+        });
+    });
+});
+
+app.post('/api/principal/requests/approve', requireAuth(['principal']), (req, res) => {
+    const { type, id } = req.body;
+    let table = type === 'crossClass' ? 'cross_class_requests' : 'relieving_requests';
+    db.run(`UPDATE ${table} SET status = 'Approved' WHERE id = ?`, [id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: 'Success' });
+    });
+});
+
+app.post('/api/principal/attendance', requireAuth(['principal']), (req, res) => {
+    const { studentId, date, status } = req.body;
+    if (!studentId || !date || !status) return res.status(400).json({ error: 'Missing fields' });
+    
+    db.run("DELETE FROM attendance WHERE student_id = ? AND date = ? AND class_name = ?", [studentId, date, 'STAFF'], err => {
+        db.run("INSERT INTO attendance (student_id, class_name, date, status, created_by) VALUES (?, ?, ?, ?, ?)", 
+        [studentId, 'STAFF', date, status, req.session.userId], err => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Attendance recorded successfully' });
+        });
+    });
+});
+
 app.get('/api/principal/logs', requireAuth(['principal']), (req, res) => {
     db.all(`
         SELECT a.*, u.username 

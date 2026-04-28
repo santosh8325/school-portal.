@@ -370,15 +370,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
             const list = document.getElementById('att-list');
             const today = new Date().toISOString().split('T')[0];
-            list.innerHTML = students.length ? students.map(s => `
+            const preAtt = await fetch(`${apiBase}/teacher/attendance/today`).then(r => r.json());
+            const attMap = {};
+            preAtt.forEach(a => attMap[a.student_id] = a.status);
+            
+            list.innerHTML = students.length ? students.map(s => {
+                const status = attMap[s.id];
+                const controls = status 
+                    ? `<span style="font-weight:bold; color:${status === 'Present' ? 'green' : 'red'}; margin-right:10px;">${status}</span><button onclick="resetAttendanceUI(${s.id}, '${today}')" class="btn-secondary" style="padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`
+                    : `<button onclick="markAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button><button onclick="markAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>`;
+                return `
                 <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
                     <span><b>${s.username}</b></span>
                     <div style="display:flex; gap:10px; align-items:center;" id="att-controls-${s.id}">
-                        <button onclick="markAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button>
-                        <button onclick="markAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>
+                        ${controls}
                     </div>
                 </div>
-            `).join('') : '<p>No students assigned.</p>';
+                `;
+            }).join('') : '<p>No students assigned.</p>';
             
             window.markAttendance = async (studentId, date, status) => {
                 const res = await fetch(`${apiBase}/teacher/attendance`, {
@@ -413,16 +422,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             const teachers = staff.filter(s => s.role === 'teacher' || s.role === 'staff');
             const list = document.getElementById('staff-att-list');
             const today = new Date().toISOString().split('T')[0];
+            const preAtt = await fetch(`${apiBase}/principal/attendance/today`).then(r => r.json());
+            const attMap = {};
+            preAtt.forEach(a => attMap[a.student_id] = a.status);
             
-            list.innerHTML = teachers.length ? teachers.map(s => `
+            list.innerHTML = teachers.length ? teachers.map(s => {
+                const status = attMap[s.id];
+                const controls = status 
+                    ? `<span style="font-weight:bold; color:${status === 'Present' ? 'green' : 'red'}; margin-right:10px;">${status}</span><button onclick="resetStaffAttendanceUI(${s.id}, '${today}')" class="btn-secondary" style="padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`
+                    : `<button onclick="markStaffAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button><button onclick="markStaffAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>`;
+                return `
                 <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
                     <span><b>${s.username}</b></span>
                     <div style="display:flex; gap:10px; align-items:center;" id="staff-att-controls-${s.id}">
-                        <button onclick="markStaffAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button>
-                        <button onclick="markStaffAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>
+                        ${controls}
                     </div>
                 </div>
-            `).join('') : '<p>No teachers assigned.</p>';
+                `;
+            }).join('') : '<p>No teachers assigned.</p>';
             
             window.markStaffAttendance = async (studentId, date, status) => {
                 const res = await fetch(`${apiBase}/principal/attendance`, {

@@ -202,7 +202,11 @@ app.get('/api/teacher/class-stats', requireAuth(['teacher']), (req, res) => {
             });
         });
     });
+app.get('/api/teacher/attendance/today', requireAuth(['teacher']), (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    db.all("SELECT student_id, status FROM attendance WHERE class_name = ? AND date = ?", [req.session.className, today], (err, rows) => res.json(rows || []));
 });
+
 app.post('/api/teacher/attendance', requireAuth(['teacher']), (req, res) => {
     const { studentId, date, status } = req.body;
     if (!studentId || !date || !status) return res.status(400).json({ error: 'Missing fields' });
@@ -291,6 +295,11 @@ app.post('/api/principal/requests/approve', requireAuth(['principal']), (req, re
         if (err) return res.status(500).json({ error: err.message });
         res.json({ message: 'Success' });
     });
+});
+
+app.get('/api/principal/attendance/today', requireAuth(['principal']), (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    db.all("SELECT student_id, status FROM attendance WHERE class_name = 'STAFF' AND date = ?", [today], (err, rows) => res.json(rows || []));
 });
 
 app.post('/api/principal/attendance', requireAuth(['principal']), (req, res) => {

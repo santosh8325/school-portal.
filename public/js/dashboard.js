@@ -366,11 +366,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
             const list = document.getElementById('att-list');
             const today = new Date().toISOString().split('T')[0];
-            
             list.innerHTML = students.length ? students.map(s => `
                 <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
                     <span><b>${s.username}</b></span>
-                    <div style="display:flex; gap:10px;">
+                    <div style="display:flex; gap:10px; align-items:center;" id="att-controls-${s.id}">
                         <button onclick="markAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button>
                         <button onclick="markAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>
                     </div>
@@ -384,9 +383,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     body: JSON.stringify({ studentId, date, status })
                 });
                 if(res.ok) {
-                    alert(`${status} marked for student ID: ${studentId}`);
+                    const ctrl = document.getElementById('att-controls-' + studentId);
+                    if (ctrl) {
+                        ctrl.innerHTML = `<span style="font-weight:bold; color:${status === 'Present' ? 'green' : 'red'}; margin-right:10px;">${status}</span>
+                        <button onclick="resetAttendanceUI(${studentId}, '${date}')" class="btn-secondary" style="padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`;
+                    }
                 } else {
                     alert('Error marking attendance.');
+                }
+            };
+
+            window.resetAttendanceUI = (studentId, date) => {
+                const ctrl = document.getElementById('att-controls-' + studentId);
+                if (ctrl) {
+                    ctrl.innerHTML = `
+                        <button onclick="markAttendance(${studentId}, '${date}', 'Present')" class="btn-primary" style="background:green;">Present</button>
+                        <button onclick="markAttendance(${studentId}, '${date}', 'Absent')" class="btn-danger">Absent</button>
+                    `;
                 }
             };
         }

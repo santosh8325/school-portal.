@@ -268,6 +268,43 @@ const db = new sqlite3.Database(dbPath, (err) => {
                     }
                 });
             });
+
+            // Class YouTube Channel (one per class, set by teacher)
+            db.run(`CREATE TABLE IF NOT EXISTS class_youtube_channel (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                teacher_id INTEGER,
+                class_name TEXT,
+                school_id INTEGER,
+                channel_url TEXT,
+                channel_name TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(teacher_id) REFERENCES users(id)
+            )`);
+
+            // Curated YouTube Videos (added by teacher from the channel)
+            db.run(`CREATE TABLE IF NOT EXISTS class_youtube_videos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                teacher_id INTEGER,
+                class_name TEXT,
+                school_id INTEGER,
+                video_url TEXT,
+                video_title TEXT,
+                added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(teacher_id) REFERENCES users(id)
+            )`);
+
+            // OneDrive / Cloud Files shared by teacher
+            db.run(`CREATE TABLE IF NOT EXISTS class_onedrive_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                teacher_id INTEGER,
+                class_name TEXT,
+                school_id INTEGER,
+                file_url TEXT,
+                file_title TEXT,
+                file_type TEXT DEFAULT 'document',
+                added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(teacher_id) REFERENCES users(id)
+            )`);
         });
     }
 });

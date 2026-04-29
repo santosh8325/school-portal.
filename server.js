@@ -372,6 +372,96 @@ app.post('/api/teacher/homework/bulk', requireAuth(['teacher']), upload.single('
     }
 });
 
+// --- YOUTUBE CHANNEL & VIDEO APIs ---
+
+// Teacher: Get their class channel config
+app.get('/api/teacher/youtube/channel', requireAuth(['teacher']), (req, res) => {
+    db.get("SELECT * FROM class_youtube_channel WHERE class_name = ? AND school_id = ?",
+        [req.session.className, req.session.schoolId],
+        (err, row) => res.json(row || null));
+});
+
+// Teacher: Set (upsert) the class YouTube channel
+app.post('/api/teacher/youtube/channel', requireAuth(['teacher']), (req, res) => {
+    const { channel_url, channel_name } = req.body;
+    if (!channel_url) return res.status(400).json({ error: 'Channel URL is required' });
+    db.get("SELECT id FROM class_youtube_channel WHERE class_name = ? AND school_id = ?",
+        [req.session.className, req.session.schoolId], (err, row) => {
+            if (row) {
+                db.run("UPDATE class_youtube_channel SET channel_url=?, channel_name=?, teacher_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                    [channel_url, channel_name || 'Class Channel', req.session.userId, row.id],
+                    (err) => { if (err) return res.status(500).json({ error: err.message }); res.json({ message: 'Channel updated' }); });
+            } else {
+                db.run("INSERT INTO class_youtube_channel (teacher_id, class_name, school_id, channel_url, channel_name) VALUES (?,?,?,?,?)",
+                    [req.session.userId, req.session.className, req.session.schoolId, channel_url, channel_name || 'Class Channel'],
+                    (err) => { if (err) return res.status(500).json({ error: err.message }); res.json({ message: 'Channel set' }); });
+            }
+        });
+});
+
+// Teacher: Get curated videos for their class
+app.get('/api/teacher/youtube/videos', requireAuth(['teacher']), (req, res) => {
+    db.all("SELECT * FROM class_youtube_videos WHERE class_name = ? AND school_id = ? ORDER BY added_at DESC",
+        [req.session.className, req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
+// Teacher: Add a video
+app.post('/api/teacher/youtube/videos', requireAuth(['teacher']), (req, res) => {
+    const { video_url, video_title } = req.body;
+    if (!video_url) return res.status(400).json({ error: 'Video URL is required' });
+    db.run("INSERT INTO class_youtube_videos (teacher_id, class_name, school_id, video_url, video_title) VALUES (?,?,?,?,?)",
+        [req.session.userId, req.session.className, req.session.schoolId, video_url, video_title || 'Untitled Video'],
+        function(err) { if (err) return res.status(500).json({ error: err.message }); res.json({ id: this.lastID }); });
+});
+
+// Teacher: Remove a video
+app.delete('/api/teacher/youtube/videos/:id', requireAuth(['teacher']), (req, res) => {
+    db.run("DELETE FROM class_youtube_videos WHERE id = ? AND teacher_id = ?",
+        [req.params.id, req.session.userId],
+        (err) => { if (err) return res.status(500).json({ error: err.message }); res.json({ message: 'Removed' }); });
+});
+
+// Student: Get channel + videos for their class
+app.get('/api/student/youtube', requireAuth(['student']), (req, res) => {
+    db.get("SELECT * FROM class_youtube_channel WHERE class_name = ? AND school_id = ?",
+        [req.session.className, req.session.schoolId], (err, channel) => {
+            db.all("SELECT * FROM class_youtube_videos WHERE class_name = ? AND school_id = ? ORDER BY added_at DESC",
+                [req.session.className, req.session.schoolId], (err, videos) => {
+                    res.json({ channel: channel || null, videos: videos || [] });
+                });
+        });
+});
+
+// --- ONEDRIVE / CLOUD FILES APIs ---
+
+// Teacher: Get their class files
+app.get('/api/teacher/onedrive', requireAuth(['teacher']), (req, res) => {
+    db.all("SELECT * FROM class_onedrive_files WHERE class_name = ? AND school_id = ? ORDER BY added_at DESC",
+        [req.session.className, req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
+// Teacher: Add a file
+app.post('/api/teacher/onedrive', requireAuth(['teacher']), (req, res) => {
+    const { file_url, file_title, file_type } = req.body;
+    if (!file_url) return res.status(400).json({ error: 'File URL is required' });
+    db.run("INSERT INTO class_onedrive_files (teacher_id, class_name, school_id, file_url, file_title, file_type) VALUES (?,?,?,?,?,?)",
+        [req.session.userId, req.session.className, req.session.schoolId, file_url, file_title || 'Untitled File', file_type || 'document'],
+        function(err) { if (err) return res.status(500).json({ error: err.message }); res.json({ id: this.lastID }); });
+});
+
+// Teacher: Remove a file
+app.delete('/api/teacher/onedrive/:id', requireAuth(['teacher']), (req, res) => {
+    db.run("DELETE FROM class_onedrive_files WHERE id = ? AND teacher_id = ?",
+        [req.params.id, req.session.userId],
+        (err) => { if (err) return res.status(500).json({ error: err.message }); res.json({ message: 'Removed' }); });
+});
+
+// Student: Get shared files for their class
+app.get('/api/student/onedrive', requireAuth(['student']), (req, res) => {
+    db.all("SELECT * FROM class_onedrive_files WHERE class_name = ? AND school_id = ? ORDER BY added_at DESC",
+        [req.session.className, req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
 // --- CHARTFY APIs ---
 
 app.get('/api/chartfy/conversations', requireAuth(['principal', 'teacher', 'parent', 'student']), (req, res) => {

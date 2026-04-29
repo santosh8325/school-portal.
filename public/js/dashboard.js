@@ -62,6 +62,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { id: 'studentManager', label: 'Students', icon: '👥' },
             { id: 'attendance', label: 'Attendance', icon: '✅' },
             { id: 'homework', label: 'Homework', icon: '📝' },
+            { id: 'teacherYoutube', label: 'YouTube', icon: '▶️' },
+            { id: 'teacherOneDrive', label: 'OneDrive', icon: '☁️' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' },
             { id: 'crossClass', label: 'Exchange', icon: '🔄' }
         ],
@@ -71,6 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         ],
         student: [
             { id: 'overview', label: 'Dashboard', icon: '🏠' },
+            { id: 'studentYoutube', label: 'YouTube', icon: '▶️' },
+            { id: 'studentOneDrive', label: 'OneDrive', icon: '☁️' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' }
         ]
     };
@@ -189,6 +193,72 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <button id="cf-send-btn" class="btn-primary" disabled>Send</button>
                             </div>
                         </div>
+                    </div>`;
+                    break;
+                case 'teacherYoutube':
+                    viewContainer.innerHTML = `<h2>▶️ YouTube Manager</h2>
+                    <div class="grid-2 gap-20">
+                        <div class="card">
+                            <h3 style="margin-bottom:12px;">📡 Class Channel Setting</h3>
+                            <p style="color:#666;font-size:0.85rem;margin-bottom:10px;">Set one YouTube channel your students will see. They can only access this channel.</p>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <input type="text" id="yt-ch-name" placeholder="Channel Name (e.g. Khan Academy)" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                <input type="text" id="yt-ch-url" placeholder="Channel URL (e.g. https://youtube.com/@khan)" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                <button id="yt-ch-save-btn" class="btn-primary" style="padding:10px;">💾 Save Channel</button>
+                            </div>
+                            <div id="yt-ch-current" style="margin-top:14px;padding:10px;background:#f0f7ff;border-radius:8px;display:none;"></div>
+                        </div>
+                        <div class="card" style="display:flex;flex-direction:column;">
+                            <h3 style="margin-bottom:12px;">🎬 Add Video to Playlist</h3>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <input type="text" id="yt-vid-title" placeholder="Video Title" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                <input type="text" id="yt-vid-url" placeholder="YouTube Video URL" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                <button id="yt-vid-add-btn" class="btn-primary" style="padding:10px;background:#c00;">➕ Add Video</button>
+                            </div>
+                            <h3 style="margin-top:16px;margin-bottom:10px;">📋 Playlist</h3>
+                            <div id="yt-vid-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">Loading...</div>
+                        </div>
+                    </div>`;
+                    break;
+                case 'teacherOneDrive':
+                    viewContainer.innerHTML = `<h2>☁️ OneDrive Manager</h2>
+                    <div class="grid-2 gap-20">
+                        <div class="card">
+                            <h3 style="margin-bottom:12px;">📂 Share a File / Folder</h3>
+                            <p style="color:#666;font-size:0.85rem;margin-bottom:10px;">Paste a OneDrive share link. Students will see these files in their OneDrive tab.</p>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <input type="text" id="od-file-title" placeholder="File Title (e.g. Chapter 5 Notes)" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                <select id="od-file-type" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                    <option value="document">📄 Document</option>
+                                    <option value="presentation">📊 Presentation</option>
+                                    <option value="spreadsheet">📈 Spreadsheet</option>
+                                    <option value="folder">📁 Folder</option>
+                                    <option value="pdf">📕 PDF</option>
+                                    <option value="other">📎 Other</option>
+                                </select>
+                                <input type="text" id="od-file-url" placeholder="OneDrive Share URL" style="padding:9px;border:1px solid #ccc;border-radius:6px;">
+                                <button id="od-file-add-btn" class="btn-primary" style="padding:10px;">📤 Share File</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:12px;">📋 Shared Files</h3>
+                            <div id="od-file-list" style="display:flex;flex-direction:column;gap:8px;">Loading...</div>
+                        </div>
+                    </div>`;
+                    break;
+                case 'studentYoutube':
+                    viewContainer.innerHTML = `<h2>▶️ Class YouTube Channel</h2>
+                    <div id="yt-student-channel-banner" style="margin-bottom:16px;"></div>
+                    <div class="card">
+                        <h3 style="margin-bottom:12px;">🎬 Assigned Videos</h3>
+                        <div id="yt-student-list" style="display:flex;flex-direction:column;gap:12px;">Loading...</div>
+                    </div>`;
+                    break;
+                case 'studentOneDrive':
+                    viewContainer.innerHTML = `<h2>☁️ Class OneDrive Files</h2>
+                    <div class="card">
+                        <p style="color:#666;font-size:0.85rem;margin-bottom:14px;">Files shared by your class teacher. Click to open in a new tab.</p>
+                        <div id="od-student-list" style="display:flex;flex-direction:column;gap:10px;">Loading...</div>
                     </div>`;
                     break;
                 default: viewContainer.innerHTML = `<h2>${viewId}</h2><p>Coming Soon.</p>`;
@@ -584,7 +654,150 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchAudit();
             window.chartfyInterval = setInterval(fetchAudit, 5000); 
         }
-        
+
+        // ---- TEACHER YOUTUBE MANAGER ----
+        if (viewId === 'teacherYoutube') {
+            const getYtEmbedId = (url) => {
+                const m = url.match(/(?:v=|youtu\.be\/|embed\/)([^&?/]+)/);
+                return m ? m[1] : null;
+            };
+
+            const loadChannel = async () => {
+                const ch = await fetch(`${apiBase}/teacher/youtube/channel`).then(r => r.json());
+                const box = document.getElementById('yt-ch-current');
+                if (ch && box) {
+                    box.style.display = 'block';
+                    box.innerHTML = `<strong>Current Channel:</strong> <a href="${ch.channel_url}" target="_blank" rel="noopener">${ch.channel_name}</a>`;
+                    document.getElementById('yt-ch-name').value = ch.channel_name || '';
+                    document.getElementById('yt-ch-url').value = ch.channel_url || '';
+                }
+            };
+            loadChannel();
+
+            const loadVideos = async () => {
+                const vids = await fetch(`${apiBase}/teacher/youtube/videos`).then(r => r.json());
+                const list = document.getElementById('yt-vid-list');
+                if (!list) return;
+                list.innerHTML = vids.length ? vids.map(v => {
+                    const eid = getYtEmbedId(v.video_url);
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid #eee;border-radius:8px;gap:10px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            ${eid ? `<img src="https://img.youtube.com/vi/${eid}/default.jpg" style="width:80px;border-radius:4px;">` : '🎬'}
+                            <span><b>${v.video_title}</b><br><a href="${v.video_url}" target="_blank" style="font-size:0.78rem;color:#1565c0;">Open ↗</a></span>
+                        </div>
+                        <button onclick="removeYtVideo(${v.id})" style="background:#c00;color:#fff;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;">🗑 Remove</button>
+                    </div>`;
+                }).join('') : '<p style="color:#aaa;">No videos yet. Add from the form.</p>';
+            };
+            loadVideos();
+
+            window.removeYtVideo = async (id) => {
+                await fetch(`${apiBase}/teacher/youtube/videos/${id}`, { method: 'DELETE' });
+                loadVideos();
+            };
+
+            const saveChBtn = document.getElementById('yt-ch-save-btn');
+            if (saveChBtn) saveChBtn.onclick = async () => {
+                const channel_name = document.getElementById('yt-ch-name').value.trim();
+                const channel_url = document.getElementById('yt-ch-url').value.trim();
+                if (!channel_url) return alert('Please enter a channel URL.');
+                await fetch(`${apiBase}/teacher/youtube/channel`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channel_name, channel_url }) });
+                loadChannel();
+                alert('Channel saved!');
+            };
+
+            const addVidBtn = document.getElementById('yt-vid-add-btn');
+            if (addVidBtn) addVidBtn.onclick = async () => {
+                const video_title = document.getElementById('yt-vid-title').value.trim();
+                const video_url = document.getElementById('yt-vid-url').value.trim();
+                if (!video_url) return alert('Please enter a video URL.');
+                await fetch(`${apiBase}/teacher/youtube/videos`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ video_title, video_url }) });
+                document.getElementById('yt-vid-title').value = '';
+                document.getElementById('yt-vid-url').value = '';
+                loadVideos();
+            };
+        }
+
+        // ---- TEACHER ONEDRIVE MANAGER ----
+        if (viewId === 'teacherOneDrive') {
+            const fileIcons = { document:'📄', presentation:'📊', spreadsheet:'📈', folder:'📁', pdf:'📕', other:'📎' };
+
+            const loadFiles = async () => {
+                const files = await fetch(`${apiBase}/teacher/onedrive`).then(r => r.json());
+                const list = document.getElementById('od-file-list');
+                if (!list) return;
+                list.innerHTML = files.length ? files.map(f => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #eee;border-radius:8px;">
+                        <span>${fileIcons[f.file_type] || '📎'} <b>${f.file_title}</b><br><a href="${f.file_url}" target="_blank" style="font-size:0.78rem;color:#1565c0;">Open in OneDrive ↗</a></span>
+                        <button onclick="removeOdFile(${f.id})" style="background:#c00;color:#fff;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;">🗑</button>
+                    </div>`).join('') : '<p style="color:#aaa;">No files shared yet.</p>';
+            };
+            loadFiles();
+
+            window.removeOdFile = async (id) => {
+                await fetch(`${apiBase}/teacher/onedrive/${id}`, { method: 'DELETE' });
+                loadFiles();
+            };
+
+            const addFileBtn = document.getElementById('od-file-add-btn');
+            if (addFileBtn) addFileBtn.onclick = async () => {
+                const file_title = document.getElementById('od-file-title').value.trim();
+                const file_url = document.getElementById('od-file-url').value.trim();
+                const file_type = document.getElementById('od-file-type').value;
+                if (!file_url) return alert('Please enter a file URL.');
+                await fetch(`${apiBase}/teacher/onedrive`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ file_title, file_url, file_type }) });
+                document.getElementById('od-file-title').value = '';
+                document.getElementById('od-file-url').value = '';
+                loadFiles();
+            };
+        }
+
+        // ---- STUDENT YOUTUBE VIEWER ----
+        if (viewId === 'studentYoutube') {
+            const getYtEmbedId = (url) => {
+                const m = url.match(/(?:v=|youtu\.be\/|embed\/)([^&?/]+)/);
+                return m ? m[1] : null;
+            };
+            const data = await fetch(`${apiBase}/student/youtube`).then(r => r.json());
+
+            const banner = document.getElementById('yt-student-channel-banner');
+            if (banner) {
+                if (data.channel) {
+                    banner.innerHTML = `<div class="card" style="background:linear-gradient(135deg,#ff0000,#cc0000);color:#fff;padding:16px 20px;border-radius:12px;">
+                        <h3 style="margin:0 0 4px;">📡 Class Channel: ${data.channel.channel_name}</h3>
+                        <a href="${data.channel.channel_url}" target="_blank" rel="noopener" style="color:#ffe0e0;font-size:0.9rem;">${data.channel.channel_url} ↗</a>
+                    </div>`;
+                } else {
+                    banner.innerHTML = `<div class="card" style="color:#888;"><p>Your teacher hasn't set a YouTube channel yet.</p></div>`;
+                }
+            }
+
+            const list = document.getElementById('yt-student-list');
+            if (list) {
+                list.innerHTML = data.videos.length ? data.videos.map(v => {
+                    const eid = getYtEmbedId(v.video_url);
+                    return `<div style="border:1px solid #eee;border-radius:10px;overflow:hidden;">
+                        ${eid ? `<iframe width="100%" height="220" src="https://www.youtube.com/embed/${eid}" frameborder="0" allowfullscreen style="display:block;"></iframe>` : ''}
+                        <div style="padding:10px;"><b>${v.video_title}</b> <a href="${v.video_url}" target="_blank" style="font-size:0.8rem;color:#c00;">Watch on YouTube ↗</a></div>
+                    </div>`;
+                }).join('') : '<p style="color:#aaa;">No videos assigned yet by your teacher.</p>';
+            }
+        }
+
+        // ---- STUDENT ONEDRIVE VIEWER ----
+        if (viewId === 'studentOneDrive') {
+            const fileIcons = { document:'📄', presentation:'📊', spreadsheet:'📈', folder:'📁', pdf:'📕', other:'📎' };
+            const files = await fetch(`${apiBase}/student/onedrive`).then(r => r.json());
+            const list = document.getElementById('od-student-list');
+            if (list) {
+                list.innerHTML = files.length ? files.map(f => `
+                    <a href="${f.file_url}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;padding:12px;border:1px solid #dde;border-radius:10px;text-decoration:none;color:inherit;transition:background 0.2s;" onmouseover="this.style.background='#f0f7ff'" onmouseout="this.style.background='transparent'">
+                        <span style="font-size:2rem;">${fileIcons[f.file_type] || '📎'}</span>
+                        <span><b>${f.file_title}</b><br><span style="font-size:0.78rem;color:#1565c0;">Click to open in OneDrive ↗</span></span>
+                    </a>`).join('') : '<p style="color:#aaa;">No files shared by your teacher yet.</p>';
+            }
+        }
+
         if (viewId === 'chartfy') {
             const formatLinks = (text) => {
                 if (!text) return '';

@@ -576,17 +576,19 @@ app.post('/api/principal/enrollment-requests/approve', requireAuth(['principal']
         if (!req_row) return res.status(404).json({ error: 'Request not found.' });
         if (req_row.status !== 'Pending') return res.status(400).json({ error: 'Request already processed.' });
 
-        const hashedPw = bcrypt.hashSync(req_row.password_plain, 10);
-        const qrToken = `QR-${Date.now()}-${req_row.username}`;
-        db.run(
-            'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
-            [req_row.username, hashedPw, req_row.email || '', req_row.role, req_row.class_name, req_row.school_id, qrToken],
-            function(err) {
-                if (err) return res.status(500).json({ error: err.message });
-                db.run('UPDATE enrollment_requests SET status = ? WHERE id = ?', ['Approved', id]);
-                res.json({ success: true, message: `User "${req_row.username}" enrolled as ${req_row.role}.` });
-            }
-        );
+        bcrypt.hash(req_row.password_plain, 10, (err, hashedPw) => {
+            if (err) return res.status(500).json({ error: 'Password hashing failed.' });
+            const qrToken = `QR-${Date.now()}-${req_row.username}`;
+            db.run(
+                'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
+                [req_row.username, hashedPw, req_row.email || '', req_row.role, req_row.class_name, req_row.school_id, qrToken],
+                function(err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    db.run('UPDATE enrollment_requests SET status = ? WHERE id = ?', ['Approved', id]);
+                    res.json({ success: true, message: `User "${req_row.username}" enrolled as ${req_row.role}.` });
+                }
+            );
+        });
     });
 });
 
@@ -613,16 +615,18 @@ app.post('/api/principal/enroll', requireAuth(['principal']), (req, res) => {
 
     db.get('SELECT id FROM users WHERE username = ?', [username], (err, existing) => {
         if (existing) return res.status(409).json({ error: 'Username already exists.' });
-        const hashedPw = bcrypt.hashSync(password, 10);
-        const qrToken = `QR-${Date.now()}-${username}`;
-        db.run(
-            'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
-            [username, hashedPw, email || '', role, class_name || null, req.session.schoolId, qrToken],
-            function(err) {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ success: true, id: this.lastID, message: `"${username}" enrolled as ${role} successfully.` });
-            }
-        );
+        bcrypt.hash(password, 10, (err, hashedPw) => {
+            if (err) return res.status(500).json({ error: 'Password hashing failed.' });
+            const qrToken = `QR-${Date.now()}-${username}`;
+            db.run(
+                'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
+                [username, hashedPw, email || '', role, class_name || null, req.session.schoolId, qrToken],
+                function(err) {
+                    if (err) return res.status(500).json({ error: err.message });
+                    res.json({ success: true, id: this.lastID, message: `"${username}" enrolled as ${role} successfully.` });
+                }
+            );
+        });
     });
 });
 

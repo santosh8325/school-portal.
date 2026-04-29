@@ -59,8 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         teacher: [
             { id: 'classDashboard', label: 'Dashboard', icon: '📊' },
             { id: 'studentAnalysis', label: 'Analysis', icon: '📈' },
-            { id: 'studentManager', label: 'Students', icon: '👥' },
-            { id: 'attendance', label: 'Attendance', icon: '✅' },
+            { id: 'studentsAttendance', label: 'Students & Attendance', icon: '👥' },
             { id: 'homework', label: 'Homework', icon: '📝' },
             { id: 'teacherYoutube', label: 'YouTube', icon: '▶️' },
             { id: 'teacherOneDrive', label: 'OneDrive', icon: '☁️' },
@@ -155,8 +154,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <tbody id="adv-atrisk-body"><tr><td colspan="4">Loading...</td></tr></tbody>
                             </table>
                         </div>`; break;
-                case 'studentManager': viewContainer.innerHTML = `<h2>Student Roster</h2><div id="student-list" class="card">Loading...</div>`; break;
-                case 'attendance': viewContainer.innerHTML = `<h2>Live Attendance Manager</h2><div class="card"><p>Take attendance for your assigned class today. Select an option carefully.</p><div id="att-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">Loading class roster...</div></div>`; break;
+                case 'studentsAttendance':
+                    viewContainer.innerHTML = `
+                    <h2>👥 Students &amp; Attendance</h2>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+                        <!-- LEFT: Student Details -->
+                        <div class="card" style="display:flex; flex-direction:column; gap:0;">
+                            <h3 style="margin-bottom:14px; display:flex; align-items:center; gap:8px;">🎓 Student Roster</h3>
+                            <div id="student-list" style="display:flex; flex-direction:column; gap:10px;">Loading...</div>
+                        </div>
+                        <!-- RIGHT: Attendance -->
+                        <div class="card" style="display:flex; flex-direction:column; gap:0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <h3 style="display:flex; align-items:center; gap:8px; margin:0;">✅ Today's Attendance</h3>
+                                <button id="att-download-btn" style="display:flex; align-items:center; gap:6px; padding:7px 14px; background:#1e6f3e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:0.82rem; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:background 0.2s;" onmouseover="this.style.background='#155c32'" onmouseout="this.style.background='#1e6f3e'">📥 Download Excel</button>
+                            </div>
+                            <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">Take attendance for your class. Select carefully.</p>
+                            <div id="att-list" style="display:flex; flex-direction:column; gap:10px;">Loading class roster...</div>
+                        </div>
+                    </div>`;
+                    break;
                 case 'crossClass': viewContainer.innerHTML = `<h2>Exchange Requests</h2><div id="cc-list" class="card">Loading...</div>`; break;
                 case 'chatAudit':
                     viewContainer.innerHTML = `<h2>Chartfy Oversight (Principal)</h2>
@@ -430,46 +447,96 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        if (viewId === 'studentManager') {
+        if (viewId === 'studentsAttendance') {
             const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
-            const list = document.getElementById('student-list');
-            list.innerHTML = students.map(s => `<div class="hierarchy-item"><span>${s.username}</span><span>${s.status || 'Active'}</span></div>`).join('');
-        }
-        
-        if (viewId === 'attendance') {
-            const students = await fetch(`${apiBase}/teacher/students`).then(r => r.json());
-            const list = document.getElementById('att-list');
+            const className = currentUser.class_name || 'Class';
+
+            // LEFT PANEL: Student roster details
+            const studentList = document.getElementById('student-list');
+            if (studentList) {
+                studentList.innerHTML = students.length ? students.map((s, idx) => `
+                    <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:8px; background:${idx % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent'};">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:34px; height:34px; border-radius:50%; background:var(--primary-color,#0f3c5f); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.9rem;">${s.username.charAt(0).toUpperCase()}</div>
+                            <div>
+                                <div style="font-weight:600;">${s.username}</div>
+                                <div style="font-size:0.75rem; color:#888;">Roll #${idx + 1} &bull; ${className}</div>
+                            </div>
+                        </div>
+                        <span style="font-size:0.78rem; padding:3px 10px; border-radius:20px; background:#e8f5e9; color:#2e7d32; font-weight:600;">${s.status || 'Active'}</span>
+                    </div>`).join('') : '<p style="color:#aaa;">No students assigned to your class.</p>';
+            }
+
+            // RIGHT PANEL: Attendance
+            const attList = document.getElementById('att-list');
             const today = new Date().toISOString().split('T')[0];
             const preAtt = await fetch(`${apiBase}/teacher/attendance/today`).then(r => r.json());
             const attMap = {};
             preAtt.forEach(a => attMap[a.student_id] = a.status);
-            
-            list.innerHTML = students.length ? students.map(s => {
-                const status = attMap[s.id];
-                const controls = status 
-                    ? `<span style="font-weight:bold; color:${status === 'Present' ? 'green' : 'red'}; margin-right:10px;">${status}</span><button onclick="resetAttendanceUI(${s.id}, '${today}')" class="btn-secondary" style="padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`
-                    : `<button onclick="markAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:green;">Present</button><button onclick="markAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger">Absent</button>`;
-                return `
-                <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><b>${s.username}</b></span>
-                    <div style="display:flex; gap:10px; align-items:center;" id="att-controls-${s.id}">
-                        ${controls}
-                    </div>
-                </div>
-                `;
-            }).join('') : '<p>No students assigned.</p>';
-            
+
+            if (attList) {
+                attList.innerHTML = students.length ? students.map(s => {
+                    const status = attMap[s.id];
+                    const controls = status
+                        ? `<span style="font-weight:bold; color:${status === 'Present' ? '#2e7d32' : '#c62828'}; margin-right:8px;">${status === 'Present' ? '✅' : '❌'} ${status}</span><button onclick="resetAttendanceUI(${s.id}, '${today}')" class="btn-secondary" style="padding:4px 8px; font-size:0.78rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`
+                        : `<button onclick="markAttendance(${s.id}, '${today}', 'Present')" class="btn-primary" style="background:#2e7d32; padding:5px 12px; font-size:0.82rem;">✅ Present</button><button onclick="markAttendance(${s.id}, '${today}', 'Absent')" class="btn-danger" style="padding:5px 12px; font-size:0.82rem;">❌ Absent</button>`;
+                    return `
+                    <div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px;">
+                        <span style="font-weight:600;">${s.username}</span>
+                        <div style="display:flex; gap:8px; align-items:center;" id="att-controls-${s.id}">
+                            ${controls}
+                        </div>
+                    </div>`;
+                }).join('') : '<p style="color:#aaa;">No students assigned.</p>';
+            }
+
+            // ---- DOWNLOAD EXCEL BUTTON ----
+            const dlBtn = document.getElementById('att-download-btn');
+            if (dlBtn) {
+                dlBtn.onclick = () => {
+                    if (!window.XLSX) { alert('Excel library not loaded. Please refresh the page.'); return; }
+
+                    // Build rows: re-read latest attMap from DOM controls
+                    const rows = [['Roll No', 'Student Name', 'Class', 'Date', 'Status']];
+                    students.forEach((s, idx) => {
+                        // Read live status from DOM in case teacher just marked attendance
+                        const ctrl = document.getElementById('att-controls-' + s.id);
+                        let liveStatus = attMap[s.id] || 'Not Marked';
+                        if (ctrl) {
+                            const span = ctrl.querySelector('span');
+                            if (span) {
+                                const txt = span.textContent.trim();
+                                if (txt.includes('Present')) liveStatus = 'Present';
+                                else if (txt.includes('Absent')) liveStatus = 'Absent';
+                            }
+                        }
+                        rows.push([idx + 1, s.username, className, today, liveStatus]);
+                    });
+
+                    const ws = window.XLSX.utils.aoa_to_sheet(rows);
+
+                    // Style header row width
+                    ws['!cols'] = [
+                        { wch: 10 }, { wch: 25 }, { wch: 12 }, { wch: 14 }, { wch: 14 }
+                    ];
+
+                    const wb = window.XLSX.utils.book_new();
+                    window.XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+                    window.XLSX.writeFile(wb, `Attendance_${className}_${today}.xlsx`);
+                };
+            }
+
             window.markAttendance = async (studentId, date, status) => {
                 const res = await fetch(`${apiBase}/teacher/attendance`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ studentId, date, status })
                 });
-                if(res.ok) {
+                if (res.ok) {
                     const ctrl = document.getElementById('att-controls-' + studentId);
                     if (ctrl) {
-                        ctrl.innerHTML = `<span style="font-weight:bold; color:${status === 'Present' ? 'green' : 'red'}; margin-right:10px;">${status}</span>
-                        <button onclick="resetAttendanceUI(${studentId}, '${date}')" class="btn-secondary" style="padding:4px 8px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`;
+                        ctrl.innerHTML = `<span style="font-weight:bold; color:${status === 'Present' ? '#2e7d32' : '#c62828'}; margin-right:8px;">${status === 'Present' ? '✅' : '❌'} ${status}</span>
+                        <button onclick="resetAttendanceUI(${studentId}, '${date}')" class="btn-secondary" style="padding:4px 8px; font-size:0.78rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">Edit</button>`;
                     }
                 } else {
                     alert('Error marking attendance.');
@@ -480,8 +547,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const ctrl = document.getElementById('att-controls-' + studentId);
                 if (ctrl) {
                     ctrl.innerHTML = `
-                        <button onclick="markAttendance(${studentId}, '${date}', 'Present')" class="btn-primary" style="background:green;">Present</button>
-                        <button onclick="markAttendance(${studentId}, '${date}', 'Absent')" class="btn-danger">Absent</button>
+                        <button onclick="markAttendance(${studentId}, '${date}', 'Present')" class="btn-primary" style="background:#2e7d32; padding:5px 12px; font-size:0.82rem;">✅ Present</button>
+                        <button onclick="markAttendance(${studentId}, '${date}', 'Absent')" class="btn-danger" style="padding:5px 12px; font-size:0.82rem;">❌ Absent</button>
                     `;
                 }
             };

@@ -6,11 +6,13 @@
     <title>School Portal - Dashboard</title>
     <base href="/">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/dashboard.css?v=1.8.1">
+    <link rel="stylesheet" href="/css/dashboard.css?v=1.8.3">
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- QRCode.js for personal QR ID card generation -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script>
         // Emergency Cache Purge for 'Pro-Grade' Update
         if ('serviceWorker' in navigator) {
@@ -19,7 +21,7 @@
             });
         }
     </script>
-    <script defer src="/js/dashboard.js?v=1.8.1"></script>
+    <script defer src="/js/dashboard.js?v=1.8.3"></script>
 </head>
 <body>
     <div class="dashboard-layout">

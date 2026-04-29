@@ -83,7 +83,7 @@ app.post('/api/config', requireAuth(['admin']), (req, res) => {
 
 app.get('/api/auth/me', (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated' });
-    res.json({ id: req.session.userId, username: req.session.username, role: req.session.role, className: req.session.className });
+    res.json({ id: req.session.userId, username: req.session.username, role: req.session.role, class_name: req.session.className, className: req.session.className });
 });
 
 app.post('/api/auth/login', (req, res) => {
@@ -517,6 +517,115 @@ app.get('/api/chartfy/audit', requireAuth(['principal']), (req, res) => {
         ORDER BY c.created_at DESC LIMIT 200
     `, [req.session.schoolId], (err, rows) => res.json(rows || []));
 });
+
+// =====================================================================
+// --- ENROLLMENT REQUEST SYSTEM ---
+// =====================================================================
+
+// Teacher or Parent: Submit an enrollment request (requires principal approval)
+// Teacher can enroll: student, parent
+// Parent can enroll: tutor (stored as pending for principal)
+app.post('/api/enroll/request', requireAuth(['teacher', 'parent']), (req, res) => {
+    const { full_name, username, password, role, class_name, email } = req.body;
+    if (!username || !password || !role) return res.status(400).json({ error: 'Username, password and role are required.' });
+
+    const allowedByTeacher = ['student', 'parent'];
+    const allowedByParent = ['tutor'];
+    const requesterRole = req.session.role.toLowerCase();
+
+    if (requesterRole === 'teacher' && !allowedByTeacher.includes(role))
+        return res.status(403).json({ error: 'Teachers can only enroll students or parents.' });
+    if (requesterRole === 'parent' && !allowedByParent.includes(role))
+        return res.status(403).json({ error: 'Parents can only add tutors.' });
+
+    // Check username not taken
+    db.get('SELECT id FROM users WHERE username = ?', [username], (err, existing) => {
+        if (existing) return res.status(409).json({ error: 'Username already exists.' });
+        db.run(
+            'INSERT INTO enrollment_requests (school_id, requested_by, full_name, username, password_plain, role, class_name, email) VALUES (?,?,?,?,?,?,?,?)',
+            [req.session.schoolId, req.session.userId, full_name || username, username, password, role, class_name || null, email || null],
+            function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, id: this.lastID, message: 'Enrollment request submitted. Awaiting principal approval.' });
+            }
+        );
+    });
+});
+
+// Teacher/Parent: View their own submitted requests
+app.get('/api/enroll/my-requests', requireAuth(['teacher', 'parent']), (req, res) => {
+    db.all('SELECT id, full_name, username, role, class_name, status, reject_reason, created_at FROM enrollment_requests WHERE requested_by = ? ORDER BY created_at DESC',
+        [req.session.userId], (err, rows) => res.json(rows || []));
+});
+
+// Principal: View all pending enrollment requests for this school
+app.get('/api/principal/enrollment-requests', requireAuth(['principal']), (req, res) => {
+    db.all(`
+        SELECT e.*, u.username as requester_name, u.role as requester_role
+        FROM enrollment_requests e
+        JOIN users u ON e.requested_by = u.id
+        WHERE e.school_id = ?
+        ORDER BY e.created_at DESC
+    `, [req.session.schoolId], (err, rows) => res.json(rows || []));
+});
+
+// Principal: Approve an enrollment request → create actual user account
+app.post('/api/principal/enrollment-requests/approve', requireAuth(['principal']), (req, res) => {
+    const { id } = req.body;
+    db.get('SELECT * FROM enrollment_requests WHERE id = ? AND school_id = ?', [id, req.session.schoolId], (err, req_row) => {
+        if (!req_row) return res.status(404).json({ error: 'Request not found.' });
+        if (req_row.status !== 'Pending') return res.status(400).json({ error: 'Request already processed.' });
+
+        const hashedPw = bcrypt.hashSync(req_row.password_plain, 10);
+        const qrToken = `QR-${Date.now()}-${req_row.username}`;
+        db.run(
+            'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
+            [req_row.username, hashedPw, req_row.email || '', req_row.role, req_row.class_name, req_row.school_id, qrToken],
+            function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                db.run('UPDATE enrollment_requests SET status = ? WHERE id = ?', ['Approved', id]);
+                res.json({ success: true, message: `User "${req_row.username}" enrolled as ${req_row.role}.` });
+            }
+        );
+    });
+});
+
+// Principal: Reject an enrollment request
+app.post('/api/principal/enrollment-requests/reject', requireAuth(['principal']), (req, res) => {
+    const { id, reason } = req.body;
+    db.run('UPDATE enrollment_requests SET status = ?, reject_reason = ? WHERE id = ? AND school_id = ?',
+        ['Rejected', reason || 'No reason given.', id, req.session.schoolId],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        }
+    );
+});
+
+// Principal: Directly enroll anyone (no approval needed)
+// Can add: teacher, student, parent
+app.post('/api/principal/enroll', requireAuth(['principal']), (req, res) => {
+    const { full_name, username, password, role, class_name, email } = req.body;
+    if (!username || !password || !role) return res.status(400).json({ error: 'Username, password and role are required.' });
+
+    const allowedRoles = ['teacher', 'student', 'parent'];
+    if (!allowedRoles.includes(role)) return res.status(400).json({ error: 'Invalid role. Allowed: teacher, student, parent.' });
+
+    db.get('SELECT id FROM users WHERE username = ?', [username], (err, existing) => {
+        if (existing) return res.status(409).json({ error: 'Username already exists.' });
+        const hashedPw = bcrypt.hashSync(password, 10);
+        const qrToken = `QR-${Date.now()}-${username}`;
+        db.run(
+            'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
+            [username, hashedPw, email || '', role, class_name || null, req.session.schoolId, qrToken],
+            function(err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, id: this.lastID, message: `"${username}" enrolled as ${role} successfully.` });
+            }
+        );
+    });
+});
+
 // --- BACKGROUND JOBS ---
 setInterval(() => {
     // Delete messages older than 30 minutes to reduce server load

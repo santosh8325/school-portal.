@@ -293,6 +293,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 FOREIGN KEY(teacher_id) REFERENCES users(id)
             )`);
 
+            // Enrollment Requests table (teacher/parent → principal approval)
+            db.run(`CREATE TABLE IF NOT EXISTS enrollment_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                school_id INTEGER,
+                requested_by INTEGER,
+                full_name TEXT,
+                username TEXT,
+                password_plain TEXT,
+                role TEXT,
+                class_name TEXT,
+                email TEXT,
+                status TEXT DEFAULT 'Pending',
+                reject_reason TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(requested_by) REFERENCES users(id)
+            )`);
+
             // OneDrive / Cloud Files shared by teacher
             db.run(`CREATE TABLE IF NOT EXISTS class_onedrive_files (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

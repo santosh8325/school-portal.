@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { id: 'manageTeacher', label: 'Manage Teacher', icon: '👩‍🏫' },
             { id: 'staffManager', label: 'Staff', icon: '👥' },
             { id: 'staffAttendance', label: 'Attendance', icon: '✅' },
+            { id: 'enrollManage', label: 'Enroll', icon: '➕' },
             { id: 'requests', label: 'Requests', icon: '📬' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' },
             { id: 'chatAudit', label: 'Chat Audit', icon: '👁️' },
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ],
         parent: [
             { id: 'overview', label: 'Dashboard', icon: '🏠' },
+            { id: 'enrollTutor', label: 'Add Tutor', icon: '📚' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' }
         ],
         student: [
@@ -174,7 +176,94 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>`;
                     break;
-                case 'crossClass': viewContainer.innerHTML = `<h2>Exchange Requests</h2><div id="cc-list" class="card">Loading...</div>`; break;
+                case 'crossClass':
+                    viewContainer.innerHTML = `
+                    <h2>🔄 Exchange &amp; Enroll</h2>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+                        <!-- LEFT: Exchange Requests -->
+                        <div class="card">
+                            <h3 style="margin-bottom:14px;">🔄 Exchange Requests</h3>
+                            <div style="display:flex; gap:8px; margin-bottom:14px;">
+                                <input type="text" id="cc-class-input" placeholder="Request class (e.g. 10-B)" style="flex:1; padding:8px; border:1px solid #ccc; border-radius:6px;">
+                                <button id="cc-submit-btn" class="btn-primary" style="padding:8px 14px;">Request</button>
+                            </div>
+                            <div id="cc-list" style="display:flex; flex-direction:column; gap:8px;">Loading...</div>
+                        </div>
+                        <!-- RIGHT: Enroll New Student/Parent -->
+                        <div class="card">
+                            <h3 style="margin-bottom:6px;">➕ Enroll New Member</h3>
+                            <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">Requests go to Principal for approval.</p>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                <select id="enroll-role" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                    <option value="student">👦 Student</option>
+                                    <option value="parent">👨‍👩‍👦 Parent</option>
+                                </select>
+                                <input type="text" id="enroll-name" placeholder="Full Name" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="enroll-username" placeholder="Username" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="password" id="enroll-password" placeholder="Password" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="enroll-class" placeholder="Class (e.g. 10-A) — for students" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="email" id="enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <button id="enroll-submit-btn" class="btn-primary" style="padding:10px; background:#1e6f3e;">📨 Submit for Approval</button>
+                                <div id="enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
+                            </div>
+                            <hr style="margin:18px 0;">
+                            <h4 style="margin-bottom:10px;">📋 My Submissions</h4>
+                            <div id="my-enroll-list" style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;">Loading...</div>
+                        </div>
+                    </div>`;
+                    break;
+                case 'enrollManage':
+                    viewContainer.innerHTML = `
+                    <h2>➕ Enrollment Management</h2>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+                        <!-- LEFT: Direct Enroll -->
+                        <div class="card">
+                            <h3 style="margin-bottom:6px;">🎓 Directly Enroll</h3>
+                            <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">As Principal, enroll anyone instantly.</p>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                <select id="p-enroll-role" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                    <option value="teacher">👩‍🏫 Teacher</option>
+                                    <option value="student">👦 Student</option>
+                                    <option value="parent">👨‍👩‍👦 Parent</option>
+                                </select>
+                                <input type="text" id="p-enroll-name" placeholder="Full Name" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="p-enroll-username" placeholder="Username" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="password" id="p-enroll-password" placeholder="Password" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="p-enroll-class" placeholder="Class (e.g. 10-A) — for students/teachers" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="email" id="p-enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <button id="p-enroll-btn" class="btn-primary" style="padding:10px;">✅ Enroll Now</button>
+                                <div id="p-enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
+                            </div>
+                        </div>
+                        <!-- RIGHT: Approval Queue -->
+                        <div class="card">
+                            <h3 style="margin-bottom:10px;">📬 Approval Queue</h3>
+                            <div id="p-enroll-queue" style="display:flex; flex-direction:column; gap:10px; max-height:70vh; overflow-y:auto;">Loading...</div>
+                        </div>
+                    </div>`;
+                    break;
+                case 'enrollTutor':
+                    viewContainer.innerHTML = `
+                    <h2>📚 Add a Tutor</h2>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
+                        <div class="card">
+                            <h3 style="margin-bottom:10px;">📨 Request New Tutor</h3>
+                            <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">Submit a tutor request — Principal must approve before account is created.</p>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                <input type="text" id="t-enroll-name" placeholder="Tutor Full Name" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="t-enroll-username" placeholder="Username" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="password" id="t-enroll-password" placeholder="Password" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="email" id="t-enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <button id="t-enroll-btn" class="btn-primary" style="padding:10px;">📨 Submit for Approval</button>
+                                <div id="t-enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:10px;">📋 My Tutor Requests</h3>
+                            <div id="t-enroll-list" style="display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow-y:auto;">Loading...</div>
+                        </div>
+                    </div>`;
+                    break;
                 case 'chatAudit':
                     viewContainer.innerHTML = `<h2>Chartfy Oversight (Principal)</h2>
                     <div class="grid-2 gap-20">
@@ -685,25 +774,185 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         if (viewId === 'crossClass') {
-            try {
+            // Load exchange requests
+            const loadCcList = async () => {
                 const requests = await fetch(`${apiBase}/requests/cross-class`).then(r => r.json());
                 const list = document.getElementById('cc-list');
                 if (list) {
-                    list.innerHTML = requests.length ? requests.map(req => 
-                        `<div class="hierarchy-item" style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                    list.innerHTML = requests.length ? requests.map(req =>
+                        `<div class="hierarchy-item" style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px;">
                             <div>
-                                <strong>Request:</strong> Exchange to ${req.requested_class}<br>
-                                <span style="font-size:0.8rem; color:#666;">Status: ${req.status}</span>
+                                <strong>→ ${req.requested_class}</strong>
+                                <div style="font-size:0.78rem; color:#888;">${new Date(req.created_at).toLocaleDateString()}</div>
                             </div>
-                            <div style="font-size:0.75rem; color:#999;">${new Date(req.created_at).toLocaleDateString()}</div>
+                            <span style="font-size:0.78rem; padding:3px 10px; border-radius:20px; background:${req.status === 'Approved' ? '#e8f5e9' : '#fff3e0'}; color:${req.status === 'Approved' ? '#2e7d32' : '#e65100'}; font-weight:600;">${req.status}</span>
                         </div>`
-                    ).join('') : '<p style="color:#666; padding:10px;">No exchange requests found.</p>';
+                    ).join('') : '<p style="color:#aaa; padding:10px;">No exchange requests yet.</p>';
                 }
-            } catch (err) {
-                const list = document.getElementById('cc-list');
-                if (list) list.innerHTML = '<p style="color:red; padding:10px;">Error loading requests.</p>';
-                console.error("Exchange fetch error:", err);
-            }
+            };
+            loadCcList();
+
+            const ccBtn = document.getElementById('cc-submit-btn');
+            if (ccBtn) ccBtn.onclick = async () => {
+                const cls = document.getElementById('cc-class-input').value.trim();
+                if (!cls) return alert('Please enter a class name.');
+                const r = await fetch(`${apiBase}/requests/cross-class`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ requestedClass: cls }) });
+                if (r.ok) { document.getElementById('cc-class-input').value = ''; loadCcList(); }
+                else { const e = await r.json(); alert(e.error); }
+            };
+
+            // Enroll form
+            const loadMyEnrollments = async () => {
+                const reqs = await fetch(`${apiBase}/enroll/my-requests`).then(r => r.json());
+                const list = document.getElementById('my-enroll-list');
+                if (list) {
+                    const statusColor = { Pending: '#e65100', Approved: '#2e7d32', Rejected: '#c62828' };
+                    list.innerHTML = reqs.length ? reqs.map(r =>
+                        `<div style="padding:8px 10px; border-radius:8px; border:1px solid #eee; font-size:0.82rem;">
+                            <b>${r.username}</b> (${r.role}${r.class_name ? ' · ' + r.class_name : ''})
+                            <span style="float:right; color:${statusColor[r.status] || '#555'}; font-weight:700;">${r.status}</span>
+                            ${r.reject_reason ? '<div style="color:#c62828; margin-top:3px;">' + r.reject_reason + '</div>' : ''}
+                        </div>`
+                    ).join('') : '<p style="color:#aaa; font-size:0.85rem;">No submissions yet.</p>';
+                }
+            };
+            loadMyEnrollments();
+
+            const enrollBtn = document.getElementById('enroll-submit-btn');
+            const enrollMsg = document.getElementById('enroll-msg');
+            if (enrollBtn) enrollBtn.onclick = async () => {
+                const role = document.getElementById('enroll-role').value;
+                const full_name = document.getElementById('enroll-name').value.trim();
+                const username = document.getElementById('enroll-username').value.trim();
+                const password = document.getElementById('enroll-password').value;
+                const class_name = document.getElementById('enroll-class').value.trim();
+                const email = document.getElementById('enroll-email').value.trim();
+                if (!username || !password) return (enrollMsg.innerHTML = '<span style="color:red;">Username and password are required.</span>');
+                enrollBtn.disabled = true; enrollBtn.textContent = 'Submitting...';
+                const r = await fetch(`${apiBase}/enroll/request`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ role, full_name, username, password, class_name, email })
+                });
+                const data = await r.json();
+                enrollBtn.disabled = false; enrollBtn.textContent = '📨 Submit for Approval';
+                if (r.ok) {
+                    enrollMsg.innerHTML = `<span style="color:#2e7d32;">✅ ${data.message}</span>`;
+                    ['enroll-name','enroll-username','enroll-password','enroll-class','enroll-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+                    loadMyEnrollments();
+                } else {
+                    enrollMsg.innerHTML = `<span style="color:red;">❌ ${data.error}</span>`;
+                }
+            };
+        }
+
+        if (viewId === 'enrollManage' && currentUser.role === 'principal') {
+            // ---- Direct Enroll ----
+            const pEnrollBtn = document.getElementById('p-enroll-btn');
+            const pEnrollMsg = document.getElementById('p-enroll-msg');
+            if (pEnrollBtn) pEnrollBtn.onclick = async () => {
+                const role = document.getElementById('p-enroll-role').value;
+                const full_name = document.getElementById('p-enroll-name').value.trim();
+                const username = document.getElementById('p-enroll-username').value.trim();
+                const password = document.getElementById('p-enroll-password').value;
+                const class_name = document.getElementById('p-enroll-class').value.trim();
+                const email = document.getElementById('p-enroll-email').value.trim();
+                if (!username || !password) return (pEnrollMsg.innerHTML = '<span style="color:red;">Username and password required.</span>');
+                pEnrollBtn.disabled = true; pEnrollBtn.textContent = 'Enrolling...';
+                const r = await fetch(`${apiBase}/principal/enroll`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ role, full_name, username, password, class_name, email })
+                });
+                const data = await r.json();
+                pEnrollBtn.disabled = false; pEnrollBtn.textContent = '✅ Enroll Now';
+                if (r.ok) {
+                    pEnrollMsg.innerHTML = `<span style="color:#2e7d32;">✅ ${data.message}</span>`;
+                    ['p-enroll-name','p-enroll-username','p-enroll-password','p-enroll-class','p-enroll-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+                } else {
+                    pEnrollMsg.innerHTML = `<span style="color:red;">❌ ${data.error}</span>`;
+                }
+            };
+
+            // ---- Approval Queue ----
+            const loadQueue = async () => {
+                const reqs = await fetch(`${apiBase}/principal/enrollment-requests`).then(r => r.json());
+                const queue = document.getElementById('p-enroll-queue');
+                if (!queue) return;
+                const statusColor = { Pending: '#e65100', Approved: '#2e7d32', Rejected: '#c62828' };
+                if (!reqs.length) { queue.innerHTML = '<p style="color:#aaa;">No enrollment requests yet.</p>'; return; }
+                queue.innerHTML = reqs.map(r => `
+                    <div style="padding:12px; border:1px solid #eee; border-radius:10px; background:#fafafa;" id="eq-${r.id}">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <div>
+                                <b>${r.username}</b>
+                                <span style="font-size:0.78rem; margin-left:8px; padding:2px 8px; border-radius:12px; background:#e3f2fd; color:#1565c0;">${r.role}</span>
+                                ${r.class_name ? `<span style="font-size:0.78rem; color:#888; margin-left:6px;">· ${r.class_name}</span>` : ''}
+                            </div>
+                            <span style="font-size:0.78rem; font-weight:700; color:${statusColor[r.status] || '#555'};">${r.status}</span>
+                        </div>
+                        <div style="font-size:0.78rem; color:#666; margin-bottom:8px;">Requested by <b>${r.requester_name}</b> (${r.requester_role}) · ${new Date(r.created_at).toLocaleDateString()}</div>
+                        ${r.status === 'Pending' ? `
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="approveEnrollment(${r.id})" class="btn-primary" style="padding:5px 14px; background:#2e7d32; font-size:0.82rem;">✅ Approve</button>
+                            <button onclick="rejectEnrollment(${r.id})" class="btn-danger" style="padding:5px 14px; font-size:0.82rem;">❌ Reject</button>
+                        </div>` : ''}
+                        ${r.status === 'Rejected' && r.reject_reason ? `<div style="font-size:0.78rem; color:#c62828; margin-top:4px;">Reason: ${r.reject_reason}</div>` : ''}
+                    </div>`).join('');
+
+                window.approveEnrollment = async (id) => {
+                    const r = await fetch(`${apiBase}/principal/enrollment-requests/approve`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+                    const data = await r.json();
+                    if (r.ok) { alert(data.message); loadQueue(); }
+                    else alert(data.error);
+                };
+                window.rejectEnrollment = async (id) => {
+                    const reason = prompt('Reason for rejection (optional):') || '';
+                    const r = await fetch(`${apiBase}/principal/enrollment-requests/reject`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id, reason }) });
+                    if (r.ok) loadQueue();
+                };
+            };
+            loadQueue();
+        }
+
+        if (viewId === 'enrollTutor' && currentUser.role === 'parent') {
+            const loadTutorReqs = async () => {
+                const reqs = await fetch(`${apiBase}/enroll/my-requests`).then(r => r.json());
+                const list = document.getElementById('t-enroll-list');
+                if (list) {
+                    const statusColor = { Pending: '#e65100', Approved: '#2e7d32', Rejected: '#c62828' };
+                    list.innerHTML = reqs.length ? reqs.map(r =>
+                        `<div style="padding:8px 10px; border-radius:8px; border:1px solid #eee; font-size:0.83rem;">
+                            <b>${r.username}</b> (${r.role})
+                            <span style="float:right; color:${statusColor[r.status] || '#555'}; font-weight:700;">${r.status}</span>
+                            ${r.reject_reason ? '<div style="color:#c62828; margin-top:3px;">' + r.reject_reason + '</div>' : ''}
+                        </div>`
+                    ).join('') : '<p style="color:#aaa; font-size:0.85rem;">No tutor requests yet.</p>';
+                }
+            };
+            loadTutorReqs();
+
+            const tBtn = document.getElementById('t-enroll-btn');
+            const tMsg = document.getElementById('t-enroll-msg');
+            if (tBtn) tBtn.onclick = async () => {
+                const full_name = document.getElementById('t-enroll-name').value.trim();
+                const username = document.getElementById('t-enroll-username').value.trim();
+                const password = document.getElementById('t-enroll-password').value;
+                const email = document.getElementById('t-enroll-email').value.trim();
+                if (!username || !password) return (tMsg.innerHTML = '<span style="color:red;">Username and password required.</span>');
+                tBtn.disabled = true; tBtn.textContent = 'Submitting...';
+                const r = await fetch(`${apiBase}/enroll/request`, {
+                    method: 'POST', headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({ role: 'tutor', full_name, username, password, email })
+                });
+                const data = await r.json();
+                tBtn.disabled = false; tBtn.textContent = '📨 Submit for Approval';
+                if (r.ok) {
+                    tMsg.innerHTML = `<span style="color:#2e7d32;">✅ ${data.message}</span>`;
+                    ['t-enroll-name','t-enroll-username','t-enroll-password','t-enroll-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+                    loadTutorReqs();
+                } else {
+                    tMsg.innerHTML = `<span style="color:red;">❌ ${data.error}</span>`;
+                }
+            };
         }
         
         if (viewId === 'chatAudit' && currentUser.role === 'principal') {

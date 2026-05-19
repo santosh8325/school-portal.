@@ -205,7 +205,7 @@ app.get('/api/teacher/class-stats', requireAuth(['teacher']), (req, res) => {
 });
 
 app.get('/api/teacher/attendance/today', requireAuth(['teacher']), (req, res) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     db.all("SELECT student_id, status FROM attendance WHERE class_name = ? AND date = ?", [req.session.className, today], (err, rows) => res.json(rows || []));
 });
 
@@ -300,7 +300,7 @@ app.post('/api/principal/requests/approve', requireAuth(['principal']), (req, re
 });
 
 app.get('/api/principal/attendance/today', requireAuth(['principal']), (req, res) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
     db.all("SELECT student_id, status FROM attendance WHERE class_name = 'STAFF' AND date = ?", [today], (err, rows) => res.json(rows || []));
 });
 
@@ -354,7 +354,7 @@ app.post('/api/teacher/homework/bulk', requireAuth(['teacher']), upload.single('
         data.forEach(row => {
             const title = row.title || row.Title;
             const desc = row.description || row.Description || row.details || row.Details || '';
-            let due = row.due_date || row['Due Date'] || row.dueDate || new Date().toISOString().split('T')[0];
+            let due = row.due_date || row['Due Date'] || row.dueDate || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
             if (typeof due === 'number') {
                 // Excel dates are number of days since 1900-01-01
                 due = new Date(Math.round((due - 25569)*86400*1000)).toISOString().split('T')[0];

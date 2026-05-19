@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // RIGHT PANEL: Attendance
             const attList = document.getElementById('att-list');
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
             const preAtt = await fetch(`${apiBase}/teacher/attendance/today`).then(r => r.json());
             const attMap = {};
             preAtt.forEach(a => attMap[a.student_id] = a.status);
@@ -647,7 +647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const staff = await fetch(`${apiBase}/principal/staff`).then(r => r.json());
             const teachers = staff.filter(s => s.role === 'teacher' || s.role === 'staff');
             const list = document.getElementById('staff-att-list');
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
             const preAtt = await fetch(`${apiBase}/principal/attendance/today`).then(r => r.json());
             const attMap = {};
             preAtt.forEach(a => attMap[a.student_id] = a.status);

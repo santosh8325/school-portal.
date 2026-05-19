@@ -1229,8 +1229,8 @@ window.showProfileModal = async function() {
     overlay.style.display = 'flex';
     overlay.classList.remove('hidden');
     const user = await fetch('/api/profile').then(r => r.json());
-    overlay.innerHTML = `<div class="profile-modal fade-in"><button onclick="window.closeProfileModal()" class="btn-close">&times;</button><h2>${user.username}</h2><p>${user.role}</p><div id="m-qr"></div></div>`;
+    overlay.innerHTML = `<div class="profile-modal fade-in" style="text-align:center;"><button onclick="window.closeProfileModal()" class="btn-close">&times;</button><h2>${user.username}</h2><p>${user.role}</p><div id="m-qr" style="margin:20px auto; padding:20px; background:white; display:inline-block; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div></div>`;
     const qrData = user.qr_token || `QR-${user.id}-${user.username}`;
-    if (window.QRCode) new QRCode(document.getElementById('m-qr'), { text: qrData, width:150, height:150 });
+    if (window.QRCode) new QRCode(document.getElementById('m-qr'), { text: qrData, width:220, height:220 });
 };
 window.closeProfileModal = () => { document.getElementById('modal-overlay').style.display='none'; };

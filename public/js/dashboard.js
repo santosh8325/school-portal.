@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Pro-Grade SPA Router ---
     function renderView(viewId) {
         if (window.chartfyInterval) clearInterval(window.chartfyInterval);
+        viewContainer.style.padding = ''; // Reset to CSS default
         viewContainer.innerHTML = `<div class="skeleton skeleton-title"></div><div class="skeleton skeleton-card" style="height:300px;"></div>`;
         setTimeout(() => {
             switch(viewId) {
@@ -140,9 +141,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'logs': viewContainer.innerHTML = `<h2>Security Logs</h2><div id="sec-logs" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div>`; break;
                 case 'homework': viewContainer.innerHTML = `<h2>Homework Pipeline</h2><div class="grid-2 gap-20"><div class="card" style="display:flex; flex-direction:column;"><h3 style="margin-bottom:10px;">Assign New Homework</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="text" id="hw-title" placeholder="Homework Title" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><textarea id="hw-desc" placeholder="Details/Description" rows="4" style="padding:8px; border:1px solid #ccc; border-radius:4px; resize:vertical;"></textarea><input type="date" id="hw-due" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-submit-btn" class="btn-primary" style="padding:10px;">Assign</button></div><hr style="margin:15px 0; border:1px solid #eee;"><h3 style="margin-bottom:10px;">Bulk Upload (Excel)</h3><div style="display:flex; flex-direction:column; gap:10px;"><input type="file" id="hw-excel-file" accept=".xlsx, .xls" style="padding:8px; border:1px solid #ccc; border-radius:4px;"><button id="hw-excel-btn" style="padding:10px; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Upload Excel</button><span style="font-size:0.75rem; color:#888;">Expected columns: Title, Description, Due Date</span></div></div><div id="hw-list" class="card" style="max-height:60vh;overflow-y:auto;">Loading...</div></div>`; break;
                 case 'studentAnalysis': 
+                    viewContainer.style.padding = '0';
                     const isStudent = currentUser.role === 'student';
                     const src = isStudent ? `/student_dashboard.html?studentName=${encodeURIComponent(currentUser.username)}` : `/student_dashboard.html`;
-                    viewContainer.innerHTML = `<iframe src="${src}" style="width:100%; height:80vh; border:none; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></iframe>`; 
+                    viewContainer.innerHTML = `<iframe src="${src}" style="width:100%; height:85vh; border:none; display:block;"></iframe>`; 
                     break;
                 case 'classDashboard': viewContainer.innerHTML = `<h2>Class Intelligence</h2>
                         <div class="grid-4 gap-20" style="margin-bottom: 20px;">

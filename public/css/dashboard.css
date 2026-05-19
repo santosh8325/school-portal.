@@ -598,3 +598,38 @@ select {
     display: flex;
     gap: 8px;
 }
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 768px) {
+    .dashboard-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+    }
+    .briefing-pane {
+        width: 100%;
+        border-right: none;
+        border-bottom: 4px solid var(--primary-color);
+        padding: 20px;
+        min-height: auto;
+    }
+    .main-pane {
+        overflow-y: visible;
+    }
+    .top-nav {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+        position: static;
+    }
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .view-content {
+        padding: 15px !important; /* Override inline styles if needed */
+    }
+}
+ 
+ 

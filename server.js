@@ -642,7 +642,10 @@ app.post('/api/principal/enroll/bulk', requireAuth(['principal']), upload.single
 
         for (const row of data) {
             const getKey = (keys) => {
-                const k = Object.keys(row).find(key => keys.includes(key.toLowerCase().trim()));
+                const k = Object.keys(row).find(key => {
+                    const lowerKey = key.toLowerCase();
+                    return keys.some(searchKey => lowerKey.includes(searchKey));
+                });
                 return k ? row[k] : null;
             };
 

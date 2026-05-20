@@ -630,6 +630,56 @@ app.post('/api/principal/enroll', requireAuth(['principal']), (req, res) => {
     });
 });
 
+// Principal: Bulk enroll from Excel
+app.post('/api/principal/enroll/bulk', requireAuth(['principal']), upload.single('excelFile'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    try {
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        
+        let count = 0;
+
+        for (const row of data) {
+            const getKey = (keys) => {
+                const k = Object.keys(row).find(key => keys.includes(key.toLowerCase().trim()));
+                return k ? row[k] : null;
+            };
+
+            const username = getKey(['id', 'username', 'user_id', 'userid', 'roll']);
+            const plainPassword = getKey(['password', 'pass', 'pwd']);
+            const role = getKey(['role', 'type']) || 'student';
+            const className = getKey(['class', 'class_name', 'grade']);
+            const email = getKey(['email', 'mail']);
+            
+            if (!username || !plainPassword) continue;
+
+            const existing = await new Promise(resolve => db.get('SELECT id FROM users WHERE username = ?', [username.toString()], (err, row) => resolve(row)));
+            if (existing) continue;
+
+            const hash = await bcrypt.hash(plainPassword.toString(), 10);
+            const qrToken = `QR-${Date.now()}-${username}`;
+
+            await new Promise((resolve, reject) => {
+                db.run(
+                    "INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)",
+                    [username.toString(), hash, email || '', role.toString().toLowerCase(), className ? className.toString() : null, req.session.schoolId, qrToken],
+                    function(err) {
+                        if (err) reject(err);
+                        else { count++; resolve(); }
+                    }
+                );
+            }).catch(e => console.error(e));
+        }
+
+        fs.unlinkSync(req.file.path);
+        res.json({ success: true, count });
+    } catch (err) {
+        if(fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ error: 'Error processing Excel file: ' + err.message });
+    }
+});
+
 // --- BACKGROUND JOBS ---
 setInterval(() => {
     // Delete messages older than 30 minutes to reduce server load

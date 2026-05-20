@@ -242,6 +242,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <button id="p-enroll-btn" class="btn-primary" style="padding:10px;">✅ Enroll Now</button>
                                 <div id="p-enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
                             </div>
+                            <hr style="margin:15px 0; border:1px solid #eee;">
+                            <h4 style="margin-bottom:10px;">Bulk Upload (Excel)</h4>
+                            <div style="display:flex; flex-direction:column; gap:10px;">
+                                <input type="file" id="p-enroll-excel" accept=".xlsx, .xls" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
+                                <button id="p-enroll-excel-btn" style="padding:10px; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Upload Excel</button>
+                                <span style="font-size:0.75rem; color:#888;">Expected columns: Username/ID, Password, Role, Class, Email</span>
+                            </div>
                         </div>
                         <!-- RIGHT: Approval Queue -->
                         <div class="card">
@@ -875,6 +882,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else {
                     pEnrollMsg.innerHTML = `<span style="color:red;">❌ ${data.error}</span>`;
                 }
+            };
+
+            // ---- Bulk Enroll (Excel) ----
+            const pEnrollExcelBtn = document.getElementById('p-enroll-excel-btn');
+            if (pEnrollExcelBtn) pEnrollExcelBtn.onclick = async () => {
+                const fileInput = document.getElementById('p-enroll-excel');
+                const file = fileInput.files[0];
+                if (!file) return alert("Please select an Excel file first.");
+                
+                pEnrollExcelBtn.disabled = true;
+                pEnrollExcelBtn.textContent = "Uploading...";
+                
+                const formData = new FormData();
+                formData.append('excelFile', file);
+                
+                try {
+                    const res = await fetch(`${apiBase}/principal/enroll/bulk`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        alert(`Success! Imported ${data.count} user(s).`);
+                        fileInput.value = '';
+                    } else {
+                        const err = await res.json();
+                        alert("Error: " + err.error);
+                    }
+                } catch (e) {
+                    alert("Error uploading file.");
+                }
+                pEnrollExcelBtn.disabled = false;
+                pEnrollExcelBtn.textContent = "Upload Excel";
             };
 
             // ---- Approval Queue ----

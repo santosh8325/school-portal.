@@ -245,6 +245,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <hr style="margin:15px 0; border:1px solid #eee;">
                             <h4 style="margin-bottom:10px;">Bulk Upload (Excel)</h4>
                             <div style="display:flex; flex-direction:column; gap:10px;">
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <button id="p-enroll-template-btn" class="btn-secondary" style="padding:6px 12px; font-size:0.8rem; border-radius:4px; border:1px solid #ccc; cursor:pointer;">📥 Download Template</button>
+                                </div>
                                 <input type="file" id="p-enroll-excel" accept=".xlsx, .xls" style="padding:8px; border:1px solid #ccc; border-radius:6px;">
                                 <button id="p-enroll-excel-btn" style="padding:10px; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">Upload Excel</button>
                                 <span style="font-size:0.75rem; color:#888;">Expected columns: Username/ID, Password, Role, Class, Email</span>
@@ -885,6 +888,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             // ---- Bulk Enroll (Excel) ----
+            const pEnrollTemplateBtn = document.getElementById('p-enroll-template-btn');
+            if (pEnrollTemplateBtn) pEnrollTemplateBtn.onclick = () => {
+                if (!window.XLSX) return alert('Excel library not loaded.');
+                const ws = window.XLSX.utils.aoa_to_sheet([['Username/ID', 'Password', 'Role (student/teacher/parent)', 'Class', 'Email']]);
+                ws['!cols'] = [{wch:15}, {wch:15}, {wch:25}, {wch:10}, {wch:20}];
+                const wb = window.XLSX.utils.book_new();
+                window.XLSX.utils.book_append_sheet(wb, ws, 'Enrollment_Template');
+                window.XLSX.writeFile(wb, 'Bulk_Enrollment_Template.xlsx');
+            };
+
             const pEnrollExcelBtn = document.getElementById('p-enroll-excel-btn');
             if (pEnrollExcelBtn) pEnrollExcelBtn.onclick = async () => {
                 const fileInput = document.getElementById('p-enroll-excel');

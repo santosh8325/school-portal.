@@ -86,6 +86,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'overview', label: 'Dashboard', icon: '🏠' },
         { id: 'chartfy', label: 'Chartfy', icon: '💬' }
     ];
+    
+    // Sort tabs alphabetically by label
+    navItems.sort((a, b) => a.label.localeCompare(b.label));
+
     navContainer.innerHTML = '';
     navItems.forEach((nav, idx) => {
         const btn = document.createElement('button');

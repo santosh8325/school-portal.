@@ -254,8 +254,9 @@ body {
 
 .top-nav {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
+    gap: 20px;
     padding: 20px 40px;
     background: var(--white);
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
@@ -631,5 +632,3 @@ select {
         padding: 15px !important; /* Override inline styles if needed */
     }
 }
- 
- 

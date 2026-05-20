@@ -638,6 +638,11 @@ app.post('/api/principal/enroll/bulk', requireAuth(['principal']), upload.single
         const sheetName = workbook.SheetNames[0];
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
         
+        if (!data || data.length === 0) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'The Excel file is empty or only contains headers. Please add user data rows and try again.' });
+        }
+
         let count = 0;
 
         for (const row of data) {
@@ -676,6 +681,10 @@ app.post('/api/principal/enroll/bulk', requireAuth(['principal']), upload.single
         }
 
         fs.unlinkSync(req.file.path);
+        if (count === 0) {
+            return res.status(400).json({ error: 'No users were imported. Make sure the template has valid data (Username & Password) and users do not already exist.' });
+        }
+
         res.json({ success: true, count });
     } catch (err) {
         if(fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);

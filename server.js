@@ -111,6 +111,8 @@ app.post('/api/auth/login', (req, res) => {
             
             res.json({ 
                 message: 'Success', 
+                tempId: user.id, // Support cached client-side scripts expecting tempId for fallback OTP
+                demoOtp: '000000', // Support cached client-side scripts expecting demoOtp
                 redirect: user.role === 'admin' ? '/admin.html' : `/school/${user.school_id}/dashboard` 
             });
         });

@@ -20,7 +20,23 @@ if (isRender) {
         usePersistent = true;
     } catch (e) {
         console.error('[PRO-GRADE] /data directory is not writable or cannot be created:', e.message);
-        console.error('[PRO-GRADE] Fallback to ephemeral storage will be used.');
+        console.warn('[DB WARNING] /data directory is not writable. Falling back to local disk (ephemeral). Data WILL be lost on restart.');
+        
+        console.log('[CLOUD-SYNC] Attempting to restore database from cloud backup...');
+        const { execSync } = require('child_process');
+        try {
+            const kvOutput = execSync(`curl -s "https://keyvalue.immanuel.co/api/KeyVal/GetValue/eduportal_180efd9e"`, { encoding: 'utf-8' });
+            let url = kvOutput.trim().replace(/^"|"$/g, '');
+            if (url.startsWith('https://paste.rs')) {
+                console.log(`[CLOUD-SYNC] Found backup at ${url}. Downloading...`);
+                execSync(`curl -s -o school.db "${url}"`);
+                console.log('[CLOUD-SYNC] Database restored successfully!');
+            } else {
+                console.log('[CLOUD-SYNC] No cloud backup found. Starting fresh.');
+            }
+        } catch (syncErr) {
+            console.error('[CLOUD-SYNC] Failed to restore database:', syncErr.message);
+        }
     }
 
     if (usePersistent) {
@@ -365,6 +381,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
         });
     }
 });
+
+// Start the cloud sync loop if we are falling back to ephemeral storage on Render
+if (isRender && dbPath === localDbPath) {
+    try {
+        require('./cloud_sync').startSyncLoop();
+    } catch(e) {
+        console.error('[CLOUD-SYNC] Could not start sync loop:', e.message);
+    }
+}
 
 module.exports = db;
 

@@ -551,7 +551,7 @@ app.get('/api/chartfy/audit', requireAuth(['principal']), (req, res) => {
 // Teacher can enroll: student, parent
 // Parent can enroll: tutor (stored as pending for principal)
 app.post('/api/enroll/request', requireAuth(['teacher', 'parent']), (req, res) => {
-    const { full_name, username, password, role, class_name, email } = req.body;
+    const { full_name, username, password, role, class_name, email, phone, parent_id } = req.body;
     if (!username || !password || !role) return res.status(400).json({ error: 'Username, password and role are required.' });
 
     const allowedByTeacher = ['student', 'parent'];
@@ -563,15 +563,21 @@ app.post('/api/enroll/request', requireAuth(['teacher', 'parent']), (req, res) =
     if (requesterRole === 'parent' && !allowedByParent.includes(role))
         return res.status(403).json({ error: 'Parents can only add tutors.' });
 
+    if (role === 'student' && !parent_id) {
+        return res.status(400).json({ error: 'A parent must be assigned when enrolling a student.' });
+    }
+
+    const initialStatus = role === 'student' ? 'Pending Parent Approval' : 'Pending Principal Approval';
+
     // Check username not taken
     db.get('SELECT id FROM users WHERE username = ?', [username], (err, existing) => {
         if (existing) return res.status(409).json({ error: 'Username already exists.' });
         db.run(
-            'INSERT INTO enrollment_requests (school_id, requested_by, full_name, username, password_plain, role, class_name, email) VALUES (?,?,?,?,?,?,?,?)',
-            [req.session.schoolId, req.session.userId, full_name || username, username, password, role, class_name || null, email || null],
+            'INSERT INTO enrollment_requests (school_id, requested_by, full_name, username, password_plain, role, class_name, email, phone, parent_id, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+            [req.session.schoolId, req.session.userId, full_name || username, username, password, role, class_name || null, email || null, phone || null, parent_id || null, initialStatus],
             function(err) {
                 if (err) return res.status(500).json({ error: err.message });
-                res.json({ success: true, id: this.lastID, message: 'Enrollment request submitted. Awaiting principal approval.' });
+                res.json({ success: true, id: this.lastID, message: `Enrollment request submitted. Awaiting ${role === 'student' ? 'parent' : 'principal'} approval.` });
             }
         );
     });
@@ -583,13 +589,32 @@ app.get('/api/enroll/my-requests', requireAuth(['teacher', 'parent']), (req, res
         [req.session.userId], (err, rows) => res.json(rows || []));
 });
 
+// Parent: View students pending their approval
+app.get('/api/parent/pending-approvals', requireAuth(['parent']), (req, res) => {
+    db.all(`SELECT id, full_name, username, class_name, status, created_at 
+            FROM enrollment_requests 
+            WHERE parent_id = ? AND status = 'Pending Parent Approval' ORDER BY created_at DESC`,
+        [req.session.userId], (err, rows) => res.json(rows || []));
+});
+
+// Parent: Approve a student assignment
+app.post('/api/parent/approve-student', requireAuth(['parent']), (req, res) => {
+    const { id } = req.body;
+    db.run(`UPDATE enrollment_requests SET status = 'Pending Principal Approval' WHERE id = ? AND parent_id = ? AND status = 'Pending Parent Approval'`, 
+        [id, req.session.userId], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            if (this.changes === 0) return res.status(404).json({ error: 'Request not found or already processed.' });
+            res.json({ success: true, message: 'Student approved. Awaiting principal finalization.' });
+        });
+});
+
 // Principal: View all pending enrollment requests for this school
 app.get('/api/principal/enrollment-requests', requireAuth(['principal']), (req, res) => {
     db.all(`
         SELECT e.*, u.username as requester_name, u.role as requester_role
         FROM enrollment_requests e
         JOIN users u ON e.requested_by = u.id
-        WHERE e.school_id = ?
+        WHERE e.school_id = ? AND e.status IN ('Pending', 'Pending Principal Approval')
         ORDER BY e.created_at DESC
     `, [req.session.schoolId], (err, rows) => res.json(rows || []));
 });
@@ -599,14 +624,14 @@ app.post('/api/principal/enrollment-requests/approve', requireAuth(['principal']
     const { id } = req.body;
     db.get('SELECT * FROM enrollment_requests WHERE id = ? AND school_id = ?', [id, req.session.schoolId], (err, req_row) => {
         if (!req_row) return res.status(404).json({ error: 'Request not found.' });
-        if (req_row.status !== 'Pending') return res.status(400).json({ error: 'Request already processed.' });
+        if (!['Pending', 'Pending Principal Approval'].includes(req_row.status)) return res.status(400).json({ error: 'Request already processed or waiting for parent.' });
 
         bcrypt.hash(req_row.password_plain, 10, (err, hashedPw) => {
             if (err) return res.status(500).json({ error: 'Password hashing failed.' });
             const qrToken = `QR-${Date.now()}-${req_row.username}`;
             db.run(
-                'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
-                [req_row.username, hashedPw, req_row.email || '', req_row.role, req_row.class_name, req_row.school_id, qrToken],
+                'INSERT INTO users (username, password, email, phone, role, class_name, parent_id, school_id, qr_token) VALUES (?,?,?,?,?,?,?,?,?)',
+                [req_row.username, hashedPw, req_row.email || '', req_row.phone || null, req_row.role, req_row.class_name, req_row.parent_id || null, req_row.school_id, qrToken],
                 function(err) {
                     if (err) return res.status(500).json({ error: err.message });
                     db.run('UPDATE enrollment_requests SET status = ? WHERE id = ?', ['Approved', id]);
@@ -632,11 +657,13 @@ app.post('/api/principal/enrollment-requests/reject', requireAuth(['principal'])
 // Principal: Directly enroll anyone (no approval needed)
 // Can add: teacher, student, parent
 app.post('/api/principal/enroll', requireAuth(['principal']), (req, res) => {
-    const { full_name, username, password, role, class_name, email } = req.body;
+    const { full_name, username, password, role, class_name, email, phone, parent_id } = req.body;
     if (!username || !password || !role) return res.status(400).json({ error: 'Username, password and role are required.' });
 
     const allowedRoles = ['teacher', 'student', 'parent'];
     if (!allowedRoles.includes(role)) return res.status(400).json({ error: 'Invalid role. Allowed: teacher, student, parent.' });
+
+    if (role === 'student' && !parent_id) return res.status(400).json({ error: 'Parent ID is mandatory when directly enrolling a student.' });
 
     db.get('SELECT id FROM users WHERE username = ?', [username], (err, existing) => {
         if (existing) return res.status(409).json({ error: 'Username already exists.' });
@@ -644,8 +671,8 @@ app.post('/api/principal/enroll', requireAuth(['principal']), (req, res) => {
             if (err) return res.status(500).json({ error: 'Password hashing failed.' });
             const qrToken = `QR-${Date.now()}-${username}`;
             db.run(
-                'INSERT INTO users (username, password, email, role, class_name, school_id, qr_token) VALUES (?,?,?,?,?,?,?)',
-                [username, hashedPw, email || '', role, class_name || null, req.session.schoolId, qrToken],
+                'INSERT INTO users (username, password, email, phone, role, class_name, parent_id, school_id, qr_token) VALUES (?,?,?,?,?,?,?,?,?)',
+                [username, hashedPw, email || '', phone || null, role, class_name || null, parent_id || null, req.session.schoolId, qrToken],
                 function(err) {
                     if (err) return res.status(500).json({ error: err.message });
                     res.json({ success: true, id: this.lastID, message: `"${username}" enrolled as ${role} successfully.` });
@@ -715,6 +742,39 @@ app.post('/api/principal/enroll/bulk', requireAuth(['principal']), upload.single
         if(fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ error: 'Error processing Excel file: ' + err.message });
     }
+});
+
+// --- WHATSAPP BOT WEBHOOKS ---
+// Since the bot runs externally, we authenticate it using a fixed bot secret token (for simplicity in this project)
+const BOT_SECRET = 'eduportal-bot-secret-12345';
+
+app.get('/api/bot/absent-alerts', (req, res) => {
+    if (req.headers.authorization !== `Bearer ${BOT_SECRET}`) return res.status(401).json({ error: 'Unauthorized Bot' });
+    
+    // Find all 'Absent' attendance records where message_sent = 0
+    // Join with users to get the parent_id, then join again to get parent's phone number
+    db.all(`
+        SELECT a.id as attendance_id, s.username as student_name, p.phone as parent_phone
+        FROM attendance a
+        JOIN users s ON a.student_id = s.id
+        JOIN users p ON s.parent_id = p.id
+        WHERE a.status = 'Absent' AND a.message_sent = 0 AND p.phone IS NOT NULL
+    `, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+    });
+});
+
+app.post('/api/bot/mark-sent', (req, res) => {
+    if (req.headers.authorization !== `Bearer ${BOT_SECRET}`) return res.status(401).json({ error: 'Unauthorized Bot' });
+    
+    const { attendance_id } = req.body;
+    if (!attendance_id) return res.status(400).json({ error: 'Missing attendance_id' });
+    
+    db.run("UPDATE attendance SET message_sent = 1 WHERE id = ?", [attendance_id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
 });
 
 // --- BACKGROUND JOBS ---

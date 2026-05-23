@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ],
         parent: [
             { id: 'overview', label: 'Dashboard', icon: '🏠' },
+            { id: 'parentApprovals', label: 'Approvals', icon: '✅' },
             { id: 'enrollTutor', label: 'Add Tutor', icon: '📚' },
             { id: 'chartfy', label: 'Chartfy', icon: '💬' }
         ],
@@ -206,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <h3 style="margin-bottom:6px;">➕ Enroll New Member</h3>
                             <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">Requests go to Principal for approval.</p>
                             <div style="display:flex; flex-direction:column; gap:10px;">
-                                <select id="enroll-role" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <select id="enroll-role" style="padding:9px; border:1px solid #ccc; border-radius:6px;" onchange="document.getElementById('enroll-parent-id').style.display = this.value === 'student' ? 'block' : 'none'; document.getElementById('enroll-phone').style.display = this.value === 'parent' ? 'block' : 'none';">
                                     <option value="student">👦 Student</option>
                                     <option value="parent">👨‍👩‍👦 Parent</option>
                                 </select>
@@ -215,6 +216,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <input type="password" id="enroll-password" placeholder="Password" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="text" id="enroll-class" placeholder="Class (e.g. 10-A) — for students" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="email" id="enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="enroll-phone" placeholder="Phone Number (e.g. +1234567890)" style="padding:9px; border:1px solid #ccc; border-radius:6px; display:none;">
+                                <input type="text" id="enroll-parent-id" placeholder="Parent User ID (Required for Student)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <button id="enroll-submit-btn" class="btn-primary" style="padding:10px; background:#1e6f3e;">📨 Submit for Approval</button>
                                 <div id="enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
                             </div>
@@ -233,7 +236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <h3 style="margin-bottom:6px;">🎓 Directly Enroll</h3>
                             <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">As Principal, enroll anyone instantly.</p>
                             <div style="display:flex; flex-direction:column; gap:10px;">
-                                <select id="p-enroll-role" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <select id="p-enroll-role" style="padding:9px; border:1px solid #ccc; border-radius:6px;" onchange="document.getElementById('p-enroll-parent-id').style.display = this.value === 'student' ? 'block' : 'none'; document.getElementById('p-enroll-phone').style.display = (this.value === 'parent' || this.value === 'teacher') ? 'block' : 'none';">
                                     <option value="teacher">👩‍🏫 Teacher</option>
                                     <option value="student">👦 Student</option>
                                     <option value="parent">👨‍👩‍👦 Parent</option>
@@ -243,6 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <input type="password" id="p-enroll-password" placeholder="Password" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="text" id="p-enroll-class" placeholder="Class (e.g. 10-A) — for students/teachers" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="email" id="p-enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="p-enroll-phone" placeholder="Phone Number" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <input type="text" id="p-enroll-parent-id" placeholder="Parent User ID (Required for Student)" style="padding:9px; border:1px solid #ccc; border-radius:6px; display:none;">
                                 <button id="p-enroll-btn" class="btn-primary" style="padding:10px;">✅ Enroll Now</button>
                                 <div id="p-enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
                             </div>
@@ -262,6 +267,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <h3 style="margin-bottom:10px;">📬 Approval Queue</h3>
                             <div id="p-enroll-queue" style="display:flex; flex-direction:column; gap:10px; max-height:70vh; overflow-y:auto;">Loading...</div>
                         </div>
+                    </div>`;
+                    break;
+                case 'parentApprovals':
+                    viewContainer.innerHTML = `
+                    <h2>✅ Pending Student Approvals</h2>
+                    <div class="card">
+                        <p style="color:#888; margin-bottom:14px;">Teachers have assigned the following students to your parent account. Please review and approve.</p>
+                        <div id="pa-list" style="display:flex; flex-direction:column; gap:10px;">Loading...</div>
                     </div>`;
                     break;
                 case 'enrollTutor':
@@ -846,17 +859,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const password = document.getElementById('enroll-password').value;
                 const class_name = document.getElementById('enroll-class').value.trim();
                 const email = document.getElementById('enroll-email').value.trim();
+                const phone = document.getElementById('enroll-phone').value.trim();
+                const parent_id = document.getElementById('enroll-parent-id').value.trim();
                 if (!username || !password) return (enrollMsg.innerHTML = '<span style="color:red;">Username and password are required.</span>');
                 enrollBtn.disabled = true; enrollBtn.textContent = 'Submitting...';
                 const r = await fetch(`${apiBase}/enroll/request`, {
                     method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ role, full_name, username, password, class_name, email })
+                    body: JSON.stringify({ role, full_name, username, password, class_name, email, phone, parent_id })
                 });
                 const data = await r.json();
                 enrollBtn.disabled = false; enrollBtn.textContent = '📨 Submit for Approval';
                 if (r.ok) {
                     enrollMsg.innerHTML = `<span style="color:#2e7d32;">✅ ${data.message}</span>`;
-                    ['enroll-name','enroll-username','enroll-password','enroll-class','enroll-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+                    ['enroll-name','enroll-username','enroll-password','enroll-class','enroll-email','enroll-phone','enroll-parent-id'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
                     loadMyEnrollments();
                 } else {
                     enrollMsg.innerHTML = `<span style="color:red;">❌ ${data.error}</span>`;
@@ -875,17 +890,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const password = document.getElementById('p-enroll-password').value;
                 const class_name = document.getElementById('p-enroll-class').value.trim();
                 const email = document.getElementById('p-enroll-email').value.trim();
+                const phone = document.getElementById('p-enroll-phone').value.trim();
+                const parent_id = document.getElementById('p-enroll-parent-id').value.trim();
                 if (!username || !password) return (pEnrollMsg.innerHTML = '<span style="color:red;">Username and password required.</span>');
                 pEnrollBtn.disabled = true; pEnrollBtn.textContent = 'Enrolling...';
                 const r = await fetch(`${apiBase}/principal/enroll`, {
                     method: 'POST', headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({ role, full_name, username, password, class_name, email })
+                    body: JSON.stringify({ role, full_name, username, password, class_name, email, phone, parent_id })
                 });
                 const data = await r.json();
                 pEnrollBtn.disabled = false; pEnrollBtn.textContent = '✅ Enroll Now';
                 if (r.ok) {
                     pEnrollMsg.innerHTML = `<span style="color:#2e7d32;">✅ ${data.message}</span>`;
-                    ['p-enroll-name','p-enroll-username','p-enroll-password','p-enroll-class','p-enroll-email'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+                    ['p-enroll-name','p-enroll-username','p-enroll-password','p-enroll-class','p-enroll-email','p-enroll-phone','p-enroll-parent-id'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
                 } else {
                     pEnrollMsg.innerHTML = `<span style="color:red;">❌ ${data.error}</span>`;
                 }
@@ -973,6 +990,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             };
             loadQueue();
+        }
+
+        if (viewId === 'parentApprovals' && currentUser.role === 'parent') {
+            const loadPa = async () => {
+                const reqs = await fetch(`${apiBase}/parent/pending-approvals`).then(r => r.json());
+                const list = document.getElementById('pa-list');
+                if (list) {
+                    list.innerHTML = reqs.length ? reqs.map(r =>
+                        `<div style="padding:12px; border-radius:8px; border:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <b>${r.username}</b> (${r.class_name || 'No Class'})
+                                <div style="font-size:0.78rem; color:#888;">Assigned on ${new Date(r.created_at).toLocaleDateString()}</div>
+                            </div>
+                            <button onclick="approveAssignedStudent(${r.id})" class="btn-primary" style="padding:8px 14px; background:#2e7d32;">✅ Approve</button>
+                        </div>`
+                    ).join('') : '<p style="color:#aaa;">No pending student approvals.</p>';
+                }
+            };
+            loadPa();
+            window.approveAssignedStudent = async (id) => {
+                const res = await fetch(`${apiBase}/parent/approve-student`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({id}) });
+                if(res.ok) { alert('Student approved!'); loadPa(); }
+                else { const d = await res.json(); alert(d.error); }
+            };
         }
 
         if (viewId === 'enrollTutor' && currentUser.role === 'parent') {

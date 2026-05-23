@@ -73,6 +73,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 username TEXT UNIQUE,
                 password TEXT,
                 email TEXT,
+                phone TEXT,
                 role TEXT,
                 class_name TEXT,
                 parent_id INTEGER,
@@ -105,7 +106,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 db.get("SELECT * FROM users WHERE username = 'parent01'", (err, row) => {
                     if (!row) {
                         const hash = bcrypt.hashSync('pass123', 10);
-                        db.run("INSERT INTO users (username, password, email, role, school_id) VALUES (?, ?, ?, ?, ?)", ['parent01', hash, 'parent@school.local', 'parent', 1]);
+                        db.run("INSERT INTO users (username, password, email, phone, role, school_id) VALUES (?, ?, ?, ?, ?, ?)", ['parent01', hash, 'parent@school.local', '+1234567890', 'parent', 1]);
                     }
                 });
                 db.get("SELECT * FROM users WHERE username = 'student01'", (err, row) => {
@@ -133,6 +134,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 }
                 if (!columns.includes('reports_to')) {
                     db.run(`ALTER TABLE users ADD COLUMN reports_to INTEGER`);
+                }
+                if (!columns.includes('phone')) {
+                    db.run(`ALTER TABLE users ADD COLUMN phone TEXT`);
                 }
                 
                 db.run(`UPDATE users SET qr_token = 'QR-' || id || '-' || username WHERE qr_token IS NULL`);
@@ -166,10 +170,19 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 date DATE,
                 status TEXT,
                 created_by INTEGER,
+                message_sent BOOLEAN DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(student_id) REFERENCES users(id),
                 FOREIGN KEY(created_by) REFERENCES users(id)
-            )`);
+            )`, (err) => {
+                if (err) return;
+                db.all("PRAGMA table_info(attendance)", (err, rows) => {
+                    if (err) return;
+                    if (!rows.some(r => r.name === 'message_sent')) {
+                        db.run(`ALTER TABLE attendance ADD COLUMN message_sent BOOLEAN DEFAULT 0`);
+                    }
+                });
+            });
 
             // Homework table
             db.run(`CREATE TABLE IF NOT EXISTS homework (
@@ -360,11 +373,24 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 role TEXT,
                 class_name TEXT,
                 email TEXT,
+                phone TEXT,
+                parent_id INTEGER,
                 status TEXT DEFAULT 'Pending',
                 reject_reason TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(requested_by) REFERENCES users(id)
-            )`);
+            )`, (err) => {
+                if (err) return;
+                db.all("PRAGMA table_info(enrollment_requests)", (err, rows) => {
+                    if (err) return;
+                    if (!rows.some(r => r.name === 'parent_id')) {
+                        db.run(`ALTER TABLE enrollment_requests ADD COLUMN parent_id INTEGER`);
+                    }
+                    if (!rows.some(r => r.name === 'phone')) {
+                        db.run(`ALTER TABLE enrollment_requests ADD COLUMN phone TEXT`);
+                    }
+                });
+            });
 
             // OneDrive / Cloud Files shared by teacher
             db.run(`CREATE TABLE IF NOT EXISTS class_onedrive_files (

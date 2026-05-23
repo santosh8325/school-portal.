@@ -89,8 +89,17 @@ app.get('/api/auth/me', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     db.get("SELECT * FROM users WHERE username = ?", [username], (err, user) => {
+        if (err) {
+            console.error('[DATABASE ERROR] Failed to query user during login:', err.message);
+            return res.status(500).json({ error: 'Database access failure. Please check persistent storage configuration.' });
+        }
         if (!user) return res.status(401).json({ error: 'Invalid Credentials' });
+        
         bcrypt.compare(password, user.password, (err, isMatch) => {
+            if (err) {
+                console.error('[BCRYPT ERROR] Failed to compare password:', err.message);
+                return res.status(500).json({ error: 'Internal cryptography failure.' });
+            }
             if (!isMatch) return res.status(401).json({ error: 'Invalid Credentials' });
             
             // Bypass the tedious OTP step for instant login
@@ -111,6 +120,10 @@ app.post('/api/auth/login', (req, res) => {
 app.post('/api/auth/verify-otp', (req, res) => {
     const { tempId, otpCode } = req.body;
     db.get("SELECT * FROM users WHERE id = ?", [tempId], (err, user) => {
+        if (err) {
+            console.error('[DATABASE ERROR] Failed to query user during OTP verification:', err.message);
+            return res.status(500).json({ error: 'Database access failure.' });
+        }
         if (!user) return res.status(404).json({ error: 'User not found' });
         req.session.userId = user.id;
         req.session.username = user.username;
@@ -125,7 +138,10 @@ app.post('/api/auth/qr-login', (req, res) => {
     const { qrToken } = req.body;
     if (!qrToken) return res.status(400).json({ error: 'Missing QR Token' });
     db.get("SELECT * FROM users WHERE qr_token = ?", [qrToken], (err, user) => {
-        if (err) return res.status(500).json({ error: 'Database error' });
+        if (err) {
+            console.error('[DATABASE ERROR] Failed to query user during QR login:', err.message);
+            return res.status(500).json({ error: 'Database access failure.' });
+        }
         if (!user) return res.status(401).json({ error: 'Invalid QR Code' });
         req.session.userId = user.id;
         req.session.username = user.username;

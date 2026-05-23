@@ -4,17 +4,43 @@ const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
 const isRender = process.env.RENDER === 'true';
-let dbPath;
+const localDbPath = path.join(__dirname, 'school.db');
+let dbPath = localDbPath;
 
 if (isRender) {
-    if (!fs.existsSync('/data')) {
-        try { fs.mkdirSync('/data', { recursive: true }); } catch (e) { console.error('Could not create /data directory', e); }
+    let usePersistent = false;
+    try {
+        if (!fs.existsSync('/data')) {
+            fs.mkdirSync('/data', { recursive: true });
+        }
+        // Test writability by writing and deleting a temporary file in /data
+        const testFile = '/data/.db_write_test';
+        fs.writeFileSync(testFile, 'test');
+        fs.unlinkSync(testFile);
+        usePersistent = true;
+    } catch (e) {
+        console.error('[PRO-GRADE] /data directory is not writable or cannot be created:', e.message);
+        console.error('[PRO-GRADE] Fallback to ephemeral storage will be used.');
     }
-    dbPath = '/data/school.db';
-    console.log('[PRO-GRADE] Using persistent disk at /data/school.db');
+
+    if (usePersistent) {
+        dbPath = '/data/school.db';
+        console.log('[PRO-GRADE] Using persistent disk at /data/school.db');
+        
+        // Auto-migrate existing local database to the persistent disk if it's the first time
+        if (!fs.existsSync(dbPath) && fs.existsSync(localDbPath)) {
+            try {
+                fs.copyFileSync(localDbPath, dbPath);
+                console.log('[PRO-GRADE] Automatically migrated existing local school.db to persistent disk at /data/school.db');
+            } catch (copyErr) {
+                console.error('[PRO-GRADE] Failed to copy local school.db to persistent disk:', copyErr.message);
+            }
+        }
+    } else {
+        console.log('[PRO-GRADE] Fallback: Using local ephemeral storage at ' + dbPath);
+    }
 } else {
-    dbPath = path.join(__dirname, 'school.db');
-    console.log('[PRO-GRADE] Using local disk at ' + dbPath);
+    console.log('[PRO-GRADE] Using local database at ' + dbPath);
 }
 
 const db = new sqlite3.Database(dbPath, (err) => {

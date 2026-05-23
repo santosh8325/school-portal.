@@ -12,6 +12,31 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+    port: process.env.SMTP_PORT || 587,
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER || 'ethereal.user@ethereal.email',
+        pass: process.env.SMTP_PASS || 'password'
+    }
+});
+
+async function sendAbsenceEmail(parentEmail, studentName, date) {
+    const mailOptions = {
+        from: `"School Portal" <${process.env.SMTP_USER || 'noreply@schoolportal.local'}>`,
+        to: parentEmail,
+        subject: `Absence Alert: ${studentName}`,
+        text: `Dear Parent,\n\nYour child ${studentName} was marked Absent on ${date}.\n\nPlease log in to the school portal for details.\n\nRegards,\nSchool Administration`
+    };
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`[EMAIL] Sent absence alert to ${parentEmail} for student ${studentName}`);
+    } catch (err) {
+        console.error(`[EMAIL ERROR] Failed to send email to ${parentEmail}:`, err.message);
+    }
+}
+
 app.get('/ping', (req, res) => res.send('pong'));
 
 // CSP for industrial stability
@@ -744,6 +769,52 @@ app.post('/api/principal/enroll/bulk', requireAuth(['principal']), upload.single
     }
 });
 
+// --- PARENTS LOOKUP FOR ENROLLMENT ---
+app.get('/api/parents', requireAuth(['principal', 'teacher']), (req, res) => {
+    db.all("SELECT id, username, email FROM users WHERE role = 'parent' AND (school_id = ? OR ? IS NULL)", [req.session.schoolId, req.session.schoolId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+    });
+});
+
+// --- TEACHER TRIGGER ATTENDANCE NOTIFICATIONS ---
+app.post('/api/teacher/attendance/send-notifications', requireAuth(['teacher']), (req, res) => {
+    const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const className = req.session.className;
+    
+    db.all(`
+        SELECT a.id as attendance_id, s.username as student_name, p.email as parent_email
+        FROM attendance a
+        JOIN users s ON a.student_id = s.id
+        JOIN users p ON s.parent_id = p.id
+        WHERE a.class_name = ? AND a.date = ? AND a.status = 'Absent' AND a.notifications_triggered = 0
+    `, [className, today], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        if (!rows || rows.length === 0) {
+            return res.json({ message: 'No pending alerts found.' });
+        }
+        
+        db.run(`
+            UPDATE attendance 
+            SET notifications_triggered = 1 
+            WHERE class_name = ? AND date = ? AND status = 'Absent' AND notifications_triggered = 0
+        `, [className, today], async function(updateErr) {
+            if (updateErr) return res.status(500).json({ error: updateErr.message });
+            
+            let emailCount = 0;
+            for (const row of rows) {
+                if (row.parent_email) {
+                    await sendAbsenceEmail(row.parent_email, row.student_name, today);
+                    emailCount++;
+                }
+            }
+            
+            res.json({ message: `Successfully triggered alerts for ${rows.length} absent student(s). Sent ${emailCount} email(s).` });
+        });
+    });
+});
+
 // --- WHATSAPP BOT WEBHOOKS ---
 // Since the bot runs externally, we authenticate it using a fixed bot secret token (for simplicity in this project)
 const BOT_SECRET = 'eduportal-bot-secret-12345';
@@ -751,14 +822,14 @@ const BOT_SECRET = 'eduportal-bot-secret-12345';
 app.get('/api/bot/absent-alerts', (req, res) => {
     if (req.headers.authorization !== `Bearer ${BOT_SECRET}`) return res.status(401).json({ error: 'Unauthorized Bot' });
     
-    // Find all 'Absent' attendance records where message_sent = 0
+    // Find all 'Absent' attendance records where notifications_triggered = 1 and message_sent = 0
     // Join with users to get the parent_id, then join again to get parent's phone number
     db.all(`
         SELECT a.id as attendance_id, s.username as student_name, p.phone as parent_phone
         FROM attendance a
         JOIN users s ON a.student_id = s.id
         JOIN users p ON s.parent_id = p.id
-        WHERE a.status = 'Absent' AND a.message_sent = 0 AND p.phone IS NOT NULL
+        WHERE a.status = 'Absent' AND a.notifications_triggered = 1 AND a.message_sent = 0 AND p.phone IS NOT NULL
     `, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows || []);

@@ -185,7 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <button id="att-download-btn" style="display:flex; align-items:center; gap:6px; padding:7px 14px; background:#1e6f3e; color:#fff; border:none; border-radius:8px; cursor:pointer; font-size:0.82rem; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:background 0.2s;" onmouseover="this.style.background='#155c32'" onmouseout="this.style.background='#1e6f3e'">📥 Download Excel</button>
                             </div>
                             <p style="color:#888; font-size:0.82rem; margin-bottom:14px;">Take attendance for your class. Select carefully.</p>
-                            <div id="att-list" style="display:flex; flex-direction:column; gap:10px;">Loading class roster...</div>
+                            <div id="att-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;">Loading class roster...</div>
+                            <button id="att-send-btn" class="btn-primary" style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; width:100%; background:#1a73e8; font-weight:bold; border-radius:8px;">📨 Send Alerts to Parents</button>
                         </div>
                     </div>`;
                     break;
@@ -217,7 +218,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <input type="text" id="enroll-class" placeholder="Class (e.g. 10-A) — for students" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="email" id="enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="text" id="enroll-phone" placeholder="Phone Number (e.g. +1234567890)" style="padding:9px; border:1px solid #ccc; border-radius:6px; display:none;">
-                                <input type="text" id="enroll-parent-id" placeholder="Parent User ID (Required for Student)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                <select id="enroll-parent-id" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
+                                    <option value="">Select Parent...</option>
+                                </select>
                                 <button id="enroll-submit-btn" class="btn-primary" style="padding:10px; background:#1e6f3e;">📨 Submit for Approval</button>
                                 <div id="enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
                             </div>
@@ -247,7 +250,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <input type="text" id="p-enroll-class" placeholder="Class (e.g. 10-A) — for students/teachers" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="email" id="p-enroll-email" placeholder="Email (optional)" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
                                 <input type="text" id="p-enroll-phone" placeholder="Phone Number" style="padding:9px; border:1px solid #ccc; border-radius:6px;">
-                                <input type="text" id="p-enroll-parent-id" placeholder="Parent User ID (Required for Student)" style="padding:9px; border:1px solid #ccc; border-radius:6px; display:none;">
+                                <select id="p-enroll-parent-id" style="padding:9px; border:1px solid #ccc; border-radius:6px; display:none;">
+                                    <option value="">Select Parent...</option>
+                                </select>
                                 <button id="p-enroll-btn" class="btn-primary" style="padding:10px;">✅ Enroll Now</button>
                                 <div id="p-enroll-msg" style="font-size:0.85rem; margin-top:4px;"></div>
                             </div>
@@ -673,6 +678,28 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `;
                 }
             };
+
+            const sendBtn = document.getElementById('att-send-btn');
+            if (sendBtn) {
+                sendBtn.onclick = async () => {
+                    sendBtn.disabled = true;
+                    sendBtn.textContent = "Sending Alerts...";
+                    try {
+                        const res = await fetch(`${apiBase}/teacher/attendance/send-notifications`, { method: 'POST' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            alert(data.message);
+                        } else {
+                            const err = await res.json();
+                            alert("Error: " + err.error);
+                        }
+                    } catch (e) {
+                        alert("Error sending alerts.");
+                    }
+                    sendBtn.disabled = false;
+                    sendBtn.textContent = "📨 Send Alerts to Parents";
+                };
+            }
         }
 
         if (viewId === 'staffAttendance' && currentUser.role === 'principal') {
@@ -845,11 +872,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <span style="float:right; color:${statusColor[r.status] || '#555'}; font-weight:700;">${r.status}</span>
                             ${r.reject_reason ? '<div style="color:#c62828; margin-top:3px;">' + r.reject_reason + '</div>' : ''}
                         </div>`
-                    ).join('') : '<p style="color:#aaa; font-size:0.85rem;">No submissions yet.</p>';
-                }
-            };
             loadMyEnrollments();
 
+            const loadParents = async () => {
+                try {
+                    const parents = await fetch(`${apiBase}/parents`).then(r => r.json());
+                    const select = document.getElementById('enroll-parent-id');
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Parent...</option>' +
+                            parents.map(p => `<option value="${p.id}">${p.username} (${p.email || 'No email'})</option>`).join('');
+                    }
+                } catch (e) {
+                    console.error("Error loading parents:", e);
+                }
+            };
+            loadParents();
+ 
             const enrollBtn = document.getElementById('enroll-submit-btn');
             const enrollMsg = document.getElementById('enroll-msg');
             if (enrollBtn) enrollBtn.onclick = async () => {
@@ -990,6 +1028,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
             };
             loadQueue();
+
+            const loadPrincipalParents = async () => {
+                try {
+                    const parents = await fetch(`${apiBase}/parents`).then(r => r.json());
+                    const select = document.getElementById('p-enroll-parent-id');
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Parent...</option>' +
+                            parents.map(p => `<option value="${p.id}">${p.username} (${p.email || 'No email'})</option>`).join('');
+                    }
+                } catch (e) {
+                    console.error("Error loading parents for principal:", e);
+                }
+            };
+            loadPrincipalParents();
         }
 
         if (viewId === 'parentApprovals' && currentUser.role === 'parent') {

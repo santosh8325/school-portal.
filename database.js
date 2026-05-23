@@ -183,6 +183,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 status TEXT,
                 created_by INTEGER,
                 message_sent BOOLEAN DEFAULT 0,
+                notifications_triggered BOOLEAN DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY(student_id) REFERENCES users(id),
                 FOREIGN KEY(created_by) REFERENCES users(id)
@@ -192,6 +193,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
                     if (err) return;
                     if (!rows.some(r => r.name === 'message_sent')) {
                         db.run(`ALTER TABLE attendance ADD COLUMN message_sent BOOLEAN DEFAULT 0`);
+                    }
+                    if (!rows.some(r => r.name === 'notifications_triggered')) {
+                        db.run(`ALTER TABLE attendance ADD COLUMN notifications_triggered BOOLEAN DEFAULT 0`);
                     }
                 });
             });
@@ -257,6 +261,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
                         console.log("Default school seeded.");
                     }
                 });
+                
+                // Drop legacy table if it exists
+                db.run(`DROP TABLE IF EXISTS school_config`);
             });
 
             // Cross-Class Requests table

@@ -2,7 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
 // Configuration
-const PORTAL_URL = 'http://localhost:3000'; // Change this to your Render URL in production (e.g., https://your-school.onrender.com)
+const PORTAL_URL = process.env.PORTAL_URL || 'http://localhost:3000'; // Change this to your Render URL in production (e.g., https://your-school.onrender.com)
 const BOT_SECRET = 'eduportal-bot-secret-12345';
 const POLL_INTERVAL_MS = 60 * 1000; // Poll every 1 minute
 

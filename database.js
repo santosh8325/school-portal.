@@ -10,18 +10,30 @@ let dbPath = localDbPath;
 if (isRender) {
     let usePersistent = false;
     try {
-        if (!fs.existsSync('/data')) {
-            fs.mkdirSync('/data', { recursive: true });
+        // Render persistent disks are mounted as volumes. We verify if /data is actually a mounted volume
+        // by checking /proc/mounts. If /data is not mounted, then any writes to it are ephemeral.
+        if (fs.existsSync('/proc/mounts')) {
+            const mounts = fs.readFileSync('/proc/mounts', 'utf8');
+            const lines = mounts.split('\n');
+            const hasDataMount = lines.some(line => {
+                const parts = line.split(/\s+/);
+                return parts[1] === '/data';
+            });
+            
+            if (hasDataMount) {
+                // Test writability to ensure the mount is writable
+                const testFile = '/data/.db_write_test';
+                fs.writeFileSync(testFile, 'test');
+                fs.unlinkSync(testFile);
+                usePersistent = true;
+            }
         }
-        // Test writability by writing and deleting a temporary file in /data
-        const testFile = '/data/.db_write_test';
-        fs.writeFileSync(testFile, 'test');
-        fs.unlinkSync(testFile);
-        usePersistent = true;
     } catch (e) {
-        console.error('[PRO-GRADE] /data directory is not writable or cannot be created:', e.message);
-        console.warn('[DB WARNING] /data directory is not writable. Falling back to local disk (ephemeral). Data WILL be lost on restart.');
-        
+        console.error('[PRO-GRADE] Error checking mounts or writing to /data:', e.message);
+    }
+
+    if (!usePersistent) {
+        console.warn('[DB WARNING] No persistent disk mount detected at /data. Falling back to local disk (ephemeral). Cloud sync is enabled.');
         console.log('[CLOUD-SYNC] Attempting to restore database from cloud backup...');
         const { execSync } = require('child_process');
         try {
@@ -407,6 +419,48 @@ const db = new sqlite3.Database(dbPath, (err) => {
         });
     }
 });
+
+// Wrap db.run to automatically trigger cloud sync on mutations when using ephemeral storage
+if (isRender && dbPath === localDbPath) {
+    const originalRun = db.run;
+    db.run = function (...args) {
+        const sql = args[0];
+        const isWrite = /^\s*(insert|update|delete|alter|create|replace)/i.test(sql);
+        
+        let callback = null;
+        let callbackIndex = -1;
+        
+        for (let i = args.length - 1; i >= 1; i--) {
+            if (typeof args[i] === 'function') {
+                callback = args[i];
+                callbackIndex = i;
+                break;
+            }
+        }
+        
+        const wrappedCallback = function (err) {
+            if (!err && isWrite) {
+                try {
+                    const { triggerSync } = require('./cloud_sync');
+                    triggerSync();
+                } catch (e) {
+                    console.error('[CLOUD-SYNC] Failed to trigger sync:', e.message);
+                }
+            }
+            if (callback) {
+                callback.apply(this, arguments);
+            }
+        };
+        
+        if (callbackIndex !== -1) {
+            args[callbackIndex] = wrappedCallback;
+        } else {
+            args.push(wrappedCallback);
+        }
+        
+        return originalRun.apply(db, args);
+    };
+}
 
 // Start the cloud sync loop if we are falling back to ephemeral storage on Render
 if (isRender && dbPath === localDbPath) {

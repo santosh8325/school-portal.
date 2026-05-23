@@ -58,4 +58,36 @@ function startSyncLoop() {
     }, 5 * 60 * 1000);
 }
 
-module.exports = { startSyncLoop, uploadDb };
+let debounceTimer = null;
+let isSyncing = false;
+let pendingSync = false;
+
+function triggerSync() {
+    if (debounceTimer) {
+        clearTimeout(debounceTimer);
+    }
+    debounceTimer = setTimeout(() => {
+        if (isSyncing) {
+            pendingSync = true;
+            return;
+        }
+        runSync();
+    }, 5000); // 5 seconds debounce
+}
+
+async function runSync() {
+    isSyncing = true;
+    try {
+        await uploadDb();
+    } catch (e) {
+        console.error('[CLOUD-SYNC] Debounced backup failed:', e.message);
+    } finally {
+        isSyncing = false;
+        if (pendingSync) {
+            pendingSync = false;
+            triggerSync();
+        }
+    }
+}
+
+module.exports = { startSyncLoop, uploadDb, triggerSync };

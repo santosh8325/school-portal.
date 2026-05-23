@@ -43,17 +43,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 
                 if (res.ok) {
-                    currentTempId = data.tempId;
-                    if (data.demoOtp) {
-                        alert("IN-APP OTP GENERATED (Demo): " + data.demoOtp);
+                    if (data.redirect) {
+                        msgEl.style.color = '#27ae60';
+                        msgEl.textContent = 'Success! Redirecting...';
+                        window.location.href = data.redirect;
+                    } else {
+                        // Fallback just in case
+                        currentTempId = data.tempId;
+                        document.getElementById('login-form-wrapper').style.opacity = 0;
+                        setTimeout(() => {
+                            document.getElementById('login-form-wrapper').classList.add('hidden');
+                            document.getElementById('otp-form-wrapper').classList.remove('hidden');
+                            document.getElementById('otp-form-wrapper').style.opacity = 1;
+                        }, 300);
                     }
-                    // Transition effect
-                    document.getElementById('login-form-wrapper').style.opacity = 0;
-                    setTimeout(() => {
-                        document.getElementById('login-form-wrapper').classList.add('hidden');
-                        document.getElementById('otp-form-wrapper').classList.remove('hidden');
-                        document.getElementById('otp-form-wrapper').style.opacity = 1;
-                    }, 300);
                 } else {
                     msgEl.textContent = data.error || 'Login failed';
                 }

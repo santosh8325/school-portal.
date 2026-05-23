@@ -92,10 +92,17 @@ app.post('/api/auth/login', (req, res) => {
         if (!user) return res.status(401).json({ error: 'Invalid Credentials' });
         bcrypt.compare(password, user.password, (err, isMatch) => {
             if (!isMatch) return res.status(401).json({ error: 'Invalid Credentials' });
-            const otpCode = '000000'; // Master OTP for Pro-Demo
-            const expiresAt = new Date(Date.now() + 5 * 60000).toISOString();
-            db.run("INSERT INTO otp_auth (user_id, otp_code, expires_at) VALUES (?, ?, ?)", [user.id, otpCode, expiresAt], () => {
-                res.json({ message: 'OTP sent', tempId: user.id, demoOtp: otpCode });
+            
+            // Bypass the tedious OTP step for instant login
+            req.session.userId = user.id;
+            req.session.username = user.username;
+            req.session.role = user.role;
+            req.session.className = user.class_name;
+            req.session.schoolId = user.school_id;
+            
+            res.json({ 
+                message: 'Success', 
+                redirect: user.role === 'admin' ? '/admin.html' : `/school/${user.school_id}/dashboard` 
             });
         });
     });

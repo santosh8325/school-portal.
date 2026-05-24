@@ -1,11 +1,9 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const isRender = process.env.RENDER === 'true';
-
-// Use direct IPv6 locally (enclosed in square brackets for valid URL format) to bypass DNS sinkholes, and domain on Render
-const defaultHost = isRender ? 'db.utovtmjidolbuwtjtwnq.supabase.co' : '[2406:da18:167b:f901:8ca7:e648:9d33:f8ba]';
-const connectionString = process.env.DATABASE_URL || `postgresql://postgres:shiva%408328545777@${defaultHost}:5432/postgres`;
+// Use the Singapore regional connection pooler which is IPv4-compatible (runs on both Render and Local dev)
+const defaultConnectionString = 'postgresql://postgres.utovtmjidolbuwtjtwnq:shiva%408328545777@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres';
+const connectionString = process.env.DATABASE_URL || defaultConnectionString;
 
 const pool = new Pool({
     connectionString,

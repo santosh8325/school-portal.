@@ -151,8 +151,9 @@ const db = {
 
 // Create tables and seed data sequentially
 async function initializeSchema() {
-    const client = await pool.connect();
+    let client;
     try {
+        client = await pool.connect();
         console.log('[SUPABASE] Initializing PostgreSQL schema sequentially...');
         
         // 1. Create tables sequentially in order of dependencies
@@ -392,7 +393,7 @@ async function initializeSchema() {
     } catch (err) {
         console.error('[SUPABASE] Error initializing schema:', err.message);
     } finally {
-        client.release();
+        if (client) client.release();
     }
 }
 

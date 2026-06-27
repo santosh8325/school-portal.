@@ -866,4 +866,14 @@ app.get('/school/:schoolId/dashboard', (req, res) => {
 
 app.get('/dashboard', (req, res) => res.redirect('/'));
 
-app.listen(PORT, () => console.log(`[PRO-GRADE] Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+    console.log(`[PRO-GRADE] Server running on http://localhost:${PORT}`);
+    if (process.env.AUTO_START_SYNC === 'true') {
+        try {
+            const { startSyncLoop } = require('./data_sync_agent');
+            startSyncLoop();
+        } catch (err) {
+            console.error('[SYNC-START-ERROR] Failed to start auto-sync daemon:', err.message);
+        }
+    }
+});

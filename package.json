@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "sync": "node data_sync_agent.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +21,7 @@
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "firebase-admin": "^14.1.0",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.4",
     "pg": "^8.21.0",

@@ -3,139 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduPortal — School Management System</title>
-    <meta name="description" content="A secure, multi-tenant school management portal for Principals, Teachers, Parents and Students.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Outfit:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="/css/style.css?v=1.1.0">
+    <title>Academix Portal — One Place For Your Child</title>
+    <meta name="description" content="A premium school management and communication portal connecting teachers, students, and parents.">
+    <link rel="stylesheet" href="/css/landing.css?v=1.1.0">
 </head>
-<body class="landing-page border-theme">
-    <div class="background-overlay"></div>
+<body>
 
-    <header class="glass-header">
-        <div class="logo-container">
-            <img src="" alt="School Logo" id="school-logo">
-            <div class="school-titles">
-                <h1 id="school-name">EduPortal</h1>
-                <p id="school-address">Secure Multi-Tenant School System</p>
-            </div>
+    <!-- Header Navigation -->
+    <header>
+        <div class="container header-container">
+            <a href="#" class="brand">
+                <img src="https://static.wixstatic.com/media/2d339c_716e4932db7c40fab7dc8587e28f3ff6~mv2.png" alt="Academix Logo" class="brand-logo">
+                <span class="brand-name">Academix Portal</span>
+            </a>
+            <nav>
+                <ul class="nav-links">
+                    <li><button class="nav-link active" data-target="tab-home">Home</button></li>
+                    <li><button class="nav-link" data-target="tab-academics">Academics</button></li>
+                    <li><button class="nav-link" data-target="tab-community">Community</button></li>
+                    <li><a href="/login.html" class="btn btn-login">Log In</a></li>
+                </ul>
+            </nav>
         </div>
-        <nav class="main-nav" aria-label="Landing Navigation">
-            <ul>
-                <li><a href="#" class="tab-trigger active" data-tab="history" id="nav-history">History</a></li>
-                <li><a href="#" class="tab-trigger" data-tab="team" id="nav-team">Team</a></li>
-                <li><a href="#" class="tab-trigger" data-tab="reputation" id="nav-reputation">Reputation</a></li>
-                <li><a href="#" class="tab-trigger" data-tab="community" id="nav-community">Community</a></li>
-            </ul>
-        </nav>
     </header>
 
-    <main class="landing-main">
-        <!-- Tabbed Info Panel -->
-        <section class="info-section glass-panel" aria-label="School Information">
-            <div class="tab-panels">
-
-                <div class="tab-panel active" id="tab-history" role="tabpanel" aria-labelledby="nav-history">
-                    <div class="tab-header">
-                        <span class="tab-icon">🏛️</span>
-                        <h2>Our History</h2>
-                    </div>
-                    <p id="school-history" class="tab-body-text">Loading school history...</p>
-                    <div class="info-stats">
-                        <div class="stat-card"><span class="stat-value" id="school-est">Est. —</span><span class="stat-label">Established</span></div>
-                        <div class="stat-card"><span class="stat-value">Multi-Tenant</span><span class="stat-label">Architecture</span></div>
-                        <div class="stat-card"><span class="stat-value">100%</span><span class="stat-label">Secure</span></div>
-                    </div>
+    <!-- ==================== HOME TAB ==================== -->
+    <main class="page-tab active" id="tab-home">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-grid">
+                <div class="hero-content">
+                    <h1 class="hero-title">One pLace For yoUr Child</h1>
+                    <p class="hero-subtitle">We empower students and parents with a comprehensive digital platform designed for efficient engagement and academic excellence.</p>
+                    <a href="/login.html" class="btn btn-primary">Get Started Now</a>
                 </div>
-
-                <div class="tab-panel" id="tab-team" role="tabpanel" aria-labelledby="nav-team">
-                    <div class="tab-header">
-                        <span class="tab-icon">👥</span>
-                        <h2>Leadership Team</h2>
-                    </div>
-                    <div class="team-grid">
-                        <div class="team-card">
-                            <div class="team-avatar" aria-hidden="true">🎓</div>
-                            <strong id="school-principal">Principal</strong>
-                            <span>Head of School</span>
-                        </div>
-                        <div class="team-card">
-                            <div class="team-avatar" aria-hidden="true">📋</div>
-                            <strong>Administration</strong>
-                            <span>Academic Affairs</span>
-                        </div>
-                        <div class="team-card">
-                            <div class="team-avatar" aria-hidden="true">💻</div>
-                            <strong>Tech Division</strong>
-                            <span>Portal Management</span>
-                        </div>
-                    </div>
+                <div class="hero-image-container">
+                    <img src="https://static.wixstatic.com/media/2d339c_31a673bae69c4082bb70af5faed6e3a8~mv2.jpg" alt="One Place For Your Child" class="hero-image">
                 </div>
-
-                <div class="tab-panel" id="tab-reputation" role="tabpanel" aria-labelledby="nav-reputation">
-                    <div class="tab-header">
-                        <span class="tab-icon">🏆</span>
-                        <h2>Reputation &amp; Journey</h2>
-                    </div>
-                    <p id="school-achievements" class="tab-body-text">Loading achievements...</p>
-                    <div class="milestone-list">
-                        <div class="milestone"><span class="milestone-dot"></span><p>Digitized attendance &amp; homework grading system</p></div>
-                        <div class="milestone"><span class="milestone-dot"></span><p>OTP-secured two-factor authentication for all roles</p></div>
-                        <div class="milestone"><span class="milestone-dot"></span><p>Multi-school SaaS platform with tenant isolation</p></div>
-                    </div>
-                </div>
-
-                <div class="tab-panel" id="tab-community" role="tabpanel" aria-labelledby="nav-community">
-                    <div class="tab-header">
-                        <span class="tab-icon">⚙️</span>
-                        <h2>Developer Community</h2>
-                    </div>
-                    <p class="tab-body-text">EduPortal is built on an open, extensible Node.js &amp; SQLite architecture. Contributions, API integrations, and community extensions are always welcome.</p>
-                    <div class="community-links">
-                        <div class="comm-badge">🔧 Node.js + Express</div>
-                        <div class="comm-badge">🗄️ SQLite3</div>
-                        <div class="comm-badge">🔐 bcrypt + OTP Auth</div>
-                        <div class="comm-badge">📱 Service Worker PWA</div>
-                        <div class="comm-badge">📊 XLSX Bulk Imports</div>
-                    </div>
-                    <p id="school-phone" class="tab-body-text" style="margin-top:1.5rem;"></p>
-                </div>
-
             </div>
         </section>
 
-        <!-- Login Gateway Panel -->
-        <section class="login-section glass-panel" aria-label="Secure Login Gateway">
-            <h2>Portal Access</h2>
-            <p class="gateway-subtitle">Select your access level to continue.</p>
-
-            <div class="dual-login-toggle" role="group" aria-label="Login type selection">
-                <button class="toggle-btn active" id="btn-user-login" aria-pressed="true">
-                    <span class="toggle-icon">👤</span> User Login
-                </button>
-                <button class="toggle-btn" id="btn-admin-login" aria-pressed="false">
-                    <span class="toggle-icon">🛡️</span> Admin Gateway
-                </button>
+        <!-- Quick Access Section -->
+        <section class="section-padding" style="background-color: #FFFFFF;">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Quick Access</h2>
+                    <p class="section-subtitle">Connect with essential resources designed to support your academic journey and school community engagement.</p>
+                </div>
+                <div class="quick-access-grid">
+                    <!-- Card 1 -->
+                    <div class="card-cta">
+                        <div class="card-icon-wrapper">
+                            <span>📚</span>
+                        </div>
+                        <h3 class="card-title">Course Materials</h3>
+                        <p class="card-desc">Access your syllabi, assignments, and digital textbooks directly from your portal.</p>
+                        <a href="/login.html" class="btn btn-primary btn-card">Open Resource</a>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="card-cta">
+                        <div class="card-icon-wrapper">
+                            <span>📅</span>
+                        </div>
+                        <h3 class="card-title">Academic Calendar</h3>
+                        <p class="card-desc">Stay informed with our comprehensive schedule of events and key deadlines.</p>
+                        <a href="/login.html" class="btn btn-primary btn-card">Open Resource</a>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="card-cta">
+                        <div class="card-icon-wrapper">
+                            <span>💬</span>
+                        </div>
+                        <h3 class="card-title">Communication</h3>
+                        <p class="card-desc">Connect with educators and parents through our secure and efficient messaging tools.</p>
+                        <a href="/login.html" class="btn btn-primary btn-card">Open Resource</a>
+                    </div>
+                    <!-- Card 4 -->
+                    <div class="card-cta">
+                        <div class="card-icon-wrapper">
+                            <span>🔐</span>
+                        </div>
+                        <h3 class="card-title">Portal Login</h3>
+                        <p class="card-desc">Log in to your personalized Academix Portal for a seamless school experience.</p>
+                        <a href="/login.html" class="btn btn-primary btn-card">Open Resource</a>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <div class="gateway-description" id="gateway-desc">
-                <p>For <strong>Principals, Teachers, Parents &amp; Students</strong>. Access your school-specific dashboard securely with 2FA.</p>
+        <!-- Academic Calendar Timeline Section -->
+        <section class="section-padding">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Academic Calendar</h2>
+                    <p class="section-subtitle">A comprehensive summary of upcoming school events and important academic dates for our community.</p>
+                </div>
+                <div class="timeline">
+                    <!-- Event 1 -->
+                    <div class="timeline-item left">
+                        <div class="timeline-content">
+                            <span class="timeline-date">01 Jan</span>
+                            <h4 class="timeline-title">Orientation Day</h4>
+                            <p class="timeline-desc">Registration and welcome session for all new students and parents.</p>
+                        </div>
+                    </div>
+                    <!-- Event 2 -->
+                    <div class="timeline-item right">
+                        <div class="timeline-content">
+                            <span class="timeline-date">15 Jan</span>
+                            <h4 class="timeline-title">Winter Break</h4>
+                            <p class="timeline-desc">Official holiday closure for the winter semester. All classes are suspended.</p>
+                        </div>
+                    </div>
+                    <!-- Event 3 -->
+                    <div class="timeline-item left">
+                        <div class="timeline-content">
+                            <span class="timeline-date">01 Feb</span>
+                            <h4 class="timeline-title">Registration Deadline</h4>
+                            <p class="timeline-desc">Final date for course registration and enrollment for the new term.</p>
+                        </div>
+                    </div>
+                    <!-- Event 4 -->
+                    <div class="timeline-item right">
+                        <div class="timeline-content">
+                            <span class="timeline-date">15 Feb</span>
+                            <h4 class="timeline-title">Mid-Term Exams</h4>
+                            <p class="timeline-desc">Standardized assessments for all grade levels across the district.</p>
+                        </div>
+                    </div>
+                    <!-- Event 5 -->
+                    <div class="timeline-item left">
+                        <div class="timeline-content">
+                            <span class="timeline-date">01 Mar</span>
+                            <h4 class="timeline-title">Spring Break</h4>
+                            <p class="timeline-desc">Extended holiday closure for the spring semester. No academic activities.</p>
+                        </div>
+                    </div>
+                    <!-- Event 6 -->
+                    <div class="timeline-item right">
+                        <div class="timeline-content">
+                            <span class="timeline-date">15 Mar</span>
+                            <h4 class="timeline-title">Final Exams</h4>
+                            <p class="timeline-desc">Final assessments for the current academic year. All students must attend.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </section>
 
-            <a href="/login.html" id="go-to-login" style="text-decoration:none;">
-                <button type="button" class="btn-primary" id="login-cta-btn" style="width:100%; padding:15px; font-size:1.05rem; margin-top:1rem;">
-                    Proceed to Secure Login →
-                </button>
-            </a>
-
-            <div class="security-badges">
-                <span class="sec-badge">🔒 OTP 2FA</span>
-                <span class="sec-badge">🏫 School-Isolated</span>
-                <span class="sec-badge">🛡️ RBAC</span>
+        <!-- Motto Quote Banner -->
+        <section class="quote-banner">
+            <div class="container">
+                <h2 class="quote-text">Nurturing Minds, Building Characters</h2>
             </div>
         </section>
     </main>
 
-    <script src="/js/main.js?v=1.1.0"></script>
+    <!-- ==================== ACADEMICS TAB ==================== -->
+    <main class="page-tab" id="tab-academics">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-grid">
+                <div class="hero-content">
+                    <h1 class="hero-title">Academic Excellence</h1>
+                    <p class="hero-subtitle">We provide a comprehensive curriculum that aligns with national standards, ensuring every student receives a high-quality education designed for success in a global environment.</p>
+                    <a href="/login.html" class="btn btn-primary">Access Portal</a>
+                </div>
+                <div class="hero-image-container">
+                    <img src="https://static.wixstatic.com/media/2d339c_a363a30931974f11928857d8b0fa8b8a~mv2.jpg" alt="Academic Excellence" class="hero-image">
+                </div>
+            </div>
+        </section>
+
+        <!-- Course Materials Section -->
+        <section class="section-padding">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Course Materials</h2>
+                    <p class="section-subtitle">Access or download primary syllabus outlines, schedules, and textbooks mapped to your academic requirements.</p>
+                </div>
+                <div class="features-grid">
+                    <!-- Material 1 -->
+                    <div class="feature-card academics-card">
+                        <div class="feature-icon-wrapper">
+                            <span>📋</span>
+                        </div>
+                        <h3 class="feature-title">Curriculum Guide</h3>
+                        <p class="feature-desc">Comprehensive overview of the academic year structure, grading rubrics, and subject-wise objectives.</p>
+                        <div class="academics-card-footer">
+                            <a href="/login.html" class="btn btn-primary btn-card">Download</a>
+                        </div>
+                    </div>
+                    <!-- Material 2 -->
+                    <div class="feature-card academics-card">
+                        <div class="feature-icon-wrapper">
+                            <span>📖</span>
+                        </div>
+                        <h3 class="feature-title">Textbook List</h3>
+                        <p class="feature-desc">Official list of required and recommended literature, workbooks, and resource materials for all grade levels.</p>
+                        <div class="academics-card-footer">
+                            <a href="/login.html" class="btn btn-primary btn-card">Download</a>
+                        </div>
+                    </div>
+                    <!-- Material 3 -->
+                    <div class="feature-card academics-card">
+                        <div class="feature-icon-wrapper">
+                            <span>💻</span>
+                        </div>
+                        <h3 class="feature-title">Online Portal</h3>
+                        <p class="feature-desc">Direct links to our secure digital learning environment, resource library, and assignment submissions.</p>
+                        <div class="academics-card-footer">
+                            <a href="/login.html" class="btn btn-primary btn-card">Download</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== COMMUNITY TAB ==================== -->
+    <main class="page-tab" id="tab-community">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-grid">
+                <div class="hero-content">
+                    <h1 class="hero-title">Mastering School Tools</h1>
+                    <p class="hero-subtitle">Learn how to navigate our communication ecosystem to stay connected with educators and parents.</p>
+                    <a href="/login.html" class="btn btn-primary">Get Started Now</a>
+                </div>
+                <div class="hero-image-container">
+                    <img src="https://static.wixstatic.com/media/2d339c_2e39ef7ac31b42a186e29a4643d59016~mv2.jpg" alt="Mastering School Tools" class="hero-image">
+                </div>
+            </div>
+        </section>
+
+        <!-- Ecosystem Features Section -->
+        <section class="section-padding" style="background-color: #FFFFFF;">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Core Ecosystem Features</h2>
+                    <p class="section-subtitle">A digital suite engineered for seamless transparency between school management, staff, parents, and students.</p>
+                </div>
+                <div class="features-grid">
+                    <!-- Feature 1 -->
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <span>📊</span>
+                        </div>
+                        <h3 class="feature-title">Academix Portal</h3>
+                        <p class="feature-desc">Access your academic calendar, course materials, and grade reports in one secure, centralized location.</p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <span>💬</span>
+                        </div>
+                        <h3 class="feature-title">Parent Connect</h3>
+                        <p class="feature-desc">Stay informed about school events, homework assignments, and important announcements through our dedicated messaging hub.</p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">
+                            <span>📚</span>
+                        </div>
+                        <h3 class="feature-title">Resource Hub</h3>
+                        <p class="feature-desc">Download essential resources, syllabi, and digital textbooks directly from our secure school resource library.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <div class="container cta-grid">
+                <div class="cta-content">
+                    <h2>Parent Resources</h2>
+                    <p>We provide essential tools and guidance to support your child's academic journey. From course materials to communication tools, we ensure you are always connected to the school community.</p>
+                </div>
+                <div class="cta-action">
+                    <a href="/login.html" class="btn btn-cta">Parent Handbook</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-container">
+            <a href="mailto:hello@acadmixportal.edu" class="footer-email">hello@acadmixportal.edu</a>
+            <p class="footer-copyright">© 2026 Academix Portal. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Tab Switching Controller -->
+    <script>
+        document.querySelectorAll('.nav-link').forEach(button => {
+            button.addEventListener('click', () => {
+                // Prevent default behavior if nested in forms
+                event.preventDefault();
+                
+                // Remove active class from all links
+                document.querySelectorAll('.nav-link').forEach(lnk => lnk.classList.remove('active'));
+                // Add active class to clicked link
+                button.classList.add('active');
+                
+                // Hide all tabs
+                document.querySelectorAll('.page-tab').forEach(tab => tab.classList.remove('active'));
+                
+                // Show target tab
+                const targetId = button.getAttribute('data-target');
+                const targetTab = document.getElementById(targetId);
+                if (targetTab) {
+                    targetTab.classList.add('active');
+                    // Scroll to top of body smoothly on page toggle
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+    </script>
+
 </body>
 </html>

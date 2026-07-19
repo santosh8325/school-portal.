@@ -2,12 +2,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --primary-color: #0A1F44;     /* Deep Corporate Navy */
-    --accent-color: #FF6B35;      /* Vibrant Accent Coral */
-    --bg-color: #F5F7FA;          /* Off-White Clean Background */
-    --card-bg: #FFFFFF;           /* Card White */
-    --text-color: #1A202C;        /* Rich Dark Grey for body text */
-    --text-muted: #4A5568;        /* Medium Slate Grey for subtexts */
+    --primary-color: #10B981;     /* Premium Emerald Green */
+    --accent-color: #059669;      /* Darker Green for hover states */
+    --bg-color: #0B0F19;          /* Deep Midnight Black */
+    --card-bg: #151D30;           /* Slate Blue Card Background */
+    --text-color: #F9FAFB;        /* Crisp Near White */
+    --text-muted: #9CA3AF;        /* Soft Cool Grey */
+    --border-color: #1F293D;      /* Premium Slate Border */
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'Inter', sans-serif;
 }
@@ -165,7 +166,7 @@ header {
 /* --- Hero Section --- */
 .hero {
     padding: 5rem 0;
-    background: linear-gradient(180deg, #FFFFFF 0%, var(--bg-color) 100%);
+    background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg-color) 100%);
     overflow: hidden;
 }
 
@@ -693,5 +694,220 @@ footer {
 
     .quote-text {
         font-size: 1.5rem;
+    }
+}
+
+/* --- Premium Video Card & Two-Column Grid --- */
+.text-video-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.section-text-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.section-paragraph-large {
+    font-size: 1.15rem;
+    line-height: 1.75;
+    color: var(--text-muted);
+}
+
+.video-container-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.video-card {
+    position: relative;
+    width: 100%;
+    max-width: 540px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+}
+
+.premium-video {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    display: block;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(11, 15, 25, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.4s ease;
+    z-index: 2;
+}
+
+.play-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s ease;
+}
+
+.play-btn:hover {
+    transform: scale(1.15);
+    background-color: var(--accent-color);
+}
+
+.play-icon {
+    font-size: 2rem;
+    color: #FFFFFF;
+    margin-left: 6px;
+}
+
+.section-border-bottom {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.action-container-center {
+    display: flex;
+    justify-content: center;
+    margin-top: 3rem;
+}
+
+.btn-download-academics {
+    padding: 0.9rem 2.5rem;
+    font-size: 1rem;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+}
+
+.footer-social-links {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.social-icon {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.25s ease;
+}
+
+.social-icon:hover {
+    color: var(--primary-color);
+}
+
+/* Header style modifications for dark mode compatibility */
+header {
+    border-bottom: 1px solid var(--border-color);
+    background-color: rgba(11, 15, 25, 0.8) !important;
+    backdrop-filter: blur(12px);
+}
+
+.brand-name {
+    color: var(--text-color) !important;
+}
+
+.btn-login {
+    color: var(--primary-color) !important;
+    border: 2px solid var(--primary-color) !important;
+}
+
+.btn-login:hover {
+    background-color: var(--primary-color) !important;
+    color: #FFFFFF !important;
+}
+
+.nav-link:hover {
+    color: var(--primary-color) !important;
+}
+
+.nav-link.active {
+    color: var(--primary-color) !important;
+}
+
+.nav-link.active::after {
+    background-color: var(--primary-color) !important;
+}
+
+/* Wix site responsive additions */
+@media (max-width: 968px) {
+    .text-video-grid {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        text-align: center;
+    }
+    
+    .text-left {
+        text-align: center;
+    }
+}
+
+/* --- Centered Hero Section --- */
+.hero-centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 80px); /* Fill screen minus header */
+    padding: 0;
+    text-align: center;
+    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, rgba(11, 15, 25, 0) 70%);
+}
+
+.hero-centered-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 900px;
+    padding: 2rem;
+}
+
+.hero-title-large {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 4.5rem;
+    line-height: 1.15;
+    letter-spacing: -2px;
+    color: var(--text-color);
+    text-transform: uppercase;
+}
+
+.hero-subtitle-large {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1.75rem;
+    color: var(--primary-color);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+    .hero-title-large {
+        font-size: 3rem;
+    }
+    .hero-subtitle-large {
+        font-size: 1.25rem;
     }
 }

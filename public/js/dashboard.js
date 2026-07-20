@@ -9,19 +9,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutBtn = document.getElementById('logout-btn');
     
     const controller = new AbortController();
-    const timeoutSignal = setTimeout(() => controller.abort(), 10000);
+    const timeoutSignal = setTimeout(() => controller.abort(), 35000);
 
     try {
         const [userRes, cfgRes] = await Promise.all([
-            fetch(`${apiBase}/auth/me`, { signal: controller.signal }),
-            fetch(`${apiBase}/config`, { signal: controller.signal })
+            fetch(`${apiBase}/auth/me`, { signal: controller.signal }).catch(() => ({ ok: false })),
+            fetch(`${apiBase}/config`, { signal: controller.signal }).catch(() => ({ ok: false }))
         ]);
         clearTimeout(timeoutSignal);
 
         if (!userRes.ok) { window.location.href = '/login.html'; return; }
-        currentUser = await userRes.json();
-        currentUser.role = (currentUser.role || '').toLowerCase(); // Forced normalization
-        schoolConfig = await cfgRes.json();
+        currentUser = (await userRes.json()) || {};
+        currentUser.role = (currentUser.role || 'student').toLowerCase(); // Forced normalization
+        schoolConfig = (cfgRes.ok ? await cfgRes.json() : {}) || {};
         console.log('[PRO-GRADE] Identity Verified:', currentUser.username, currentUser.role);
     } catch (e) {
         console.error('[PRO-GRADE] Init Error:', e);
@@ -30,13 +30,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- Dynamic UI Branding ---
+    const username = currentUser.username || 'User';
+    const role = (currentUser.role || 'student').toLowerCase();
+    
     const branding = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; el?.classList.remove('skeleton-text'); };
-    branding('briefing-school-name', schoolConfig.name);
-    branding('briefing-history', schoolConfig.history || schoolConfig.address);
+    branding('briefing-school-name', schoolConfig.name || 'Academix Portal');
+    branding('briefing-history', schoolConfig.history || schoolConfig.address || 'One Place For Your Child.');
     branding('briefing-achievements', schoolConfig.achievements ? `✨ ${schoolConfig.achievements}` : '');
-    branding('user-name', currentUser.username);
-    branding('user-role', currentUser.role.toUpperCase());
-    branding('user-initial', currentUser.username.charAt(0).toUpperCase());
+    branding('user-name', username);
+    branding('user-role', role.toUpperCase());
+    branding('user-initial', username.charAt(0).toUpperCase());
 
     if (schoolConfig.primary_color) document.documentElement.style.setProperty('--primary-color', schoolConfig.primary_color);
     if (schoolConfig.logo_url) {
@@ -414,11 +417,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function bindViewEvents(viewId) {
-        if (viewId === 'studentAnalysis' && window.Chart) {
-            // Radar chart removed in favor of the new EduMetrics dashboard iframe
-        }
-        if ((viewId === 'classDashboard' && currentUser.role === 'teacher') || (viewId === 'overview' && currentUser.role === 'principal')) {
-            const data = await fetch(`${apiBase}/analytics/advanced`).then(r => r.json());
+        try {
+            if (viewId === 'studentAnalysis' && window.Chart) {
+                // Radar chart removed in favor of the new EduMetrics dashboard iframe
+            }
+            if ((viewId === 'classDashboard' && currentUser.role === 'teacher') || (viewId === 'overview' && currentUser.role === 'principal')) {
+                const res = await fetch(`${apiBase}/analytics/advanced`);
+                if (!res.ok) return;
+                const data = await res.json();
             
             // Tier 1: KPIs
             ['enrollment', 'attendance', 'gpa', 'completion'].forEach(key => {
@@ -1369,6 +1375,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
             if(sendBtn) sendBtn.onclick = sendMsg;
             if(msgInput) msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMsg(); };
+        }
+        } catch (err) {
+            console.error('[Dashboard View Error]', err);
         }
     }
 

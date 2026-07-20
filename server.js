@@ -48,6 +48,97 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// --- WIX PORTAL DEPLOYMENT MIDDLEWARE ---
+// Serve Wix thunderbolt clientWorker from the local public subfolder
+app.use('/_partials', express.static(path.join(__dirname, 'public', 'sivasantoshkaminen.wixsite.com', 'https', '_partials')));
+
+// List of domains that we can proxy/fallback proxy for the Wix site
+const domains = [
+    'static.parastorage.com',
+    'static.wixstatic.com',
+    'siteassets.parastorage.com',
+    'browser.sentry-cdn.com',
+    'panorama.wixapps.net',
+    'frog.wix.com'
+];
+
+app.use(async (req, res, next) => {
+    if (req.method !== 'GET') return next();
+
+    const matchedDomain = domains.find(d => req.path.startsWith(`/${d}`));
+    if (!matchedDomain) return next();
+
+    // Check if the file exists locally in public folder
+    const localPath = path.join(__dirname, 'public', req.path);
+    if (fs.existsSync(localPath) && fs.statSync(localPath).isFile()) {
+        return res.sendFile(localPath);
+    }
+
+    // Proxy fallback to real CDN
+    try {
+        const relativePath = req.path.replace(`/${matchedDomain}`, '');
+        const host = req.get('host') || 'localhost:3000';
+        
+        let queryString = '';
+        if (Object.keys(req.query).length) {
+            let params = new URLSearchParams(req.query).toString();
+            params = params
+                .replace(/http:\/\/localhost:3000/g, 'https://sivasantoshkaminen.wixsite.com/https')
+                .replace(/http%3A%2F%2Flocalhost%3A3000/g, 'https%3A%2F%2Fsivasantoshkaminen.wixsite.com%2Fhttps')
+                .replace(new RegExp(`http://${host}`, 'g'), 'https://sivasantoshkaminen.wixsite.com/https')
+                .replace(new RegExp(`http%3A%2F%2F${host.replace(':', '%3A')}`, 'g'), 'https%3A%2F%2Fsivasantoshkaminen.wixsite.com%2Fhttps')
+                .replace(new RegExp(host, 'g'), 'sivasantoshkaminen.wixsite.com/https')
+                .replace(new RegExp(host.replace(':', '%3A'), 'g'), 'sivasantoshkaminen.wixsite.com%2Fhttps');
+            queryString = '?' + params;
+        }
+
+        const targetUrl = `https://${matchedDomain}${relativePath}${queryString}`;
+        console.log(`[WIX PROXY] Fetching: ${targetUrl}`);
+
+        const response = await fetch(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://sivasantoshkaminen.wixsite.com/https',
+                'Origin': 'https://sivasantoshkaminen.wixsite.com'
+            }
+        });
+
+        if (!response.ok) {
+            console.error(`[WIX PROXY ERROR] Status ${response.status} for ${targetUrl}`);
+            return res.status(response.status).send(`Failed to proxy ${targetUrl}`);
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        res.setHeader('Access-Control-Allow-Origin', '*');
+
+        if (contentType.includes('application/json') || 
+            contentType.includes('text/javascript') || 
+            contentType.includes('application/javascript') || 
+            contentType.includes('text/plain') || 
+            contentType.includes('text/html')) {
+            
+            let text = await response.text();
+            text = text
+                .replace(/https:\/\/sivasantoshkaminen\.wixsite\.com\/https/g, `http://${host}`)
+                .replace(/https:\\\/\\\/sivasantoshkaminen\.wixsite\.com\\\/https/g, `http:\\/\\/${host}`)
+                .replace(/https%3A%2F%2Fsivasantoshkaminen\.wixsite\.com%2Fhttps/g, `http%3A%2F%2F${host.replace(':', '%3A')}`)
+                .replace(/sivasantoshkaminen\.wixsite\.com\/https/g, host)
+                .replace(/sivasantoshkaminen\.wixsite\.com\\\/https/g, host)
+                .replace(/sivasantoshkaminen\.wixsite\.com%2Fhttps/g, host.replace(':', '%3A'));
+            
+            res.setHeader('Content-Type', contentType);
+            res.status(response.status).send(text);
+        } else {
+            if (contentType) res.setHeader('Content-Type', contentType);
+            const arrayBuffer = await response.arrayBuffer();
+            res.status(response.status).send(Buffer.from(arrayBuffer));
+        }
+    } catch (err) {
+        console.error(`[WIX PROXY ERROR]`, err);
+        res.status(500).send(err.message);
+    }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: '7d',
     setHeaders: (res, path) => { if (path.endsWith('sw.js')) res.setHeader('Cache-Control', 'no-cache'); }
@@ -109,7 +200,19 @@ app.post('/api/config', requireAuth(['admin']), (req, res) => {
 
 app.get('/api/auth/me', (req, res) => {
     if (!req.session.userId) return res.status(401).json({ error: 'Not authenticated' });
-    res.json({ id: req.session.userId, username: req.session.username, role: req.session.role, class_name: req.session.className, className: req.session.className });
+    db.get("SELECT id, username, role, class_name, school_id FROM users WHERE id = ?", [req.session.userId], (err, user) => {
+        if (err || !user) {
+            if (req.session.username) {
+                return res.json({ id: req.session.userId, username: req.session.username, role: req.session.role || 'student', class_name: req.session.className, className: req.session.className, schoolId: req.session.schoolId || 1 });
+            }
+            return res.status(401).json({ error: 'Not authenticated' });
+        }
+        req.session.username = user.username;
+        req.session.role = user.role;
+        req.session.className = user.class_name;
+        req.session.schoolId = user.school_id || 1;
+        res.json({ id: user.id, username: user.username, role: user.role, class_name: user.class_name, className: user.class_name, schoolId: user.school_id || 1 });
+    });
 });
 
 app.post('/api/auth/login', (req, res) => {

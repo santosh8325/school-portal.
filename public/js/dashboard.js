@@ -877,7 +877,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <b>${r.username}</b> (${r.role}${r.class_name ? ' · ' + r.class_name : ''})
                             <span style="float:right; color:${statusColor[r.status] || '#555'}; font-weight:700;">${r.status}</span>
                             ${r.reject_reason ? '<div style="color:#c62828; margin-top:3px;">' + r.reject_reason + '</div>' : ''}
-                        </div>`
+                        </div>`).join('') : '<p style="color:#aaa; font-size:0.82rem;">No submissions yet.</p>';
+                }
+            };
             loadMyEnrollments();
 
             const loadParents = async () => {

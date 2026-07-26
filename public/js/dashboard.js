@@ -75,7 +75,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             { id: 'overview', label: 'Dashboard', icon: '🏠' },
             { id: 'parentApprovals', label: 'Approvals', icon: '✅' },
             { id: 'enrollTutor', label: 'Add Tutor', icon: '📚' },
-            { id: 'chartfy', label: 'Chartfy', icon: '💬' }
+            { id: 'chartfy', label: 'Chartfy', icon: '💬' },
+            { id: 'payment', label: 'PAYEMENT', icon: '💳' }
         ],
         student: [
             { id: 'overview', label: 'Dashboard', icon: '🏠' },
@@ -100,6 +101,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.className = 'nav-item ' + (idx === 0 ? 'active' : '');
         btn.innerHTML = `${nav.icon} ${nav.label}`;
         btn.onclick = () => {
+            if (nav.id === 'payment') {
+                window.location.href = "https://docs.google.com/forms/d/e/1FAIpQLSfaSxLod16RoD4oyiKmeE695XzyaAputSLN3Ohpna2ciFQ43A/viewform?usp=publish-editor";
+                return;
+            }
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderView(nav.id);
@@ -137,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             </table>
                         </div>`;
                     } else if (currentUser.role === 'parent') {
-                        viewContainer.innerHTML = `<h2>Overview</h2><div class="grid-3 gap-20"><div class="card stat-card"><h3>Children</h3><h2 id="ov-children">--</h2></div><div class="card stat-card"><h3>Fees Due</h3><h2 id="ov-fees">--</h2></div><div class="card stat-card"><h3>Pending PTM</h3><h2 id="ov-ptm">--</h2></div></div>`;
+                        viewContainer.innerHTML = `<h2>Overview</h2><div class="grid-3 gap-20"><div class="card stat-card"><h3>Children</h3><h2 id="ov-children">--</h2></div><div class="card stat-card" style="display:flex; flex-direction:column; justify-content:space-between; align-items:center;"><h3>Fees Due</h3><h2 id="ov-fees">--</h2><button onclick="window.location.href='https://docs.google.com/forms/d/e/1FAIpQLSfaSxLod16RoD4oyiKmeE695XzyaAputSLN3Ohpna2ciFQ43A/viewform?usp=publish-editor'" class="btn-primary" style="margin-top:15px; width:100%; padding:10px; font-size:0.9rem; border-radius:6px; cursor:pointer;">💳 PAYEMENT</button></div><div class="card stat-card"><h3>Pending PTM</h3><h2 id="ov-ptm">--</h2></div></div>`;
                     } else {
                         viewContainer.innerHTML = `<h2>Overview</h2><div class="card"><p>Welcome, ${currentUser.username}.</p></div>`;
                     }

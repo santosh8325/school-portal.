@@ -9,6 +9,18 @@
 </head>
 <body>
 
+    <!-- Fullscreen Preloader -->
+    <div class="experience-preloader" id="preloader">
+        <div class="preloader-brand">
+            <img src="https://static.wixstatic.com/media/2d339c_716e4932db7c40fab7dc8587e28f3ff6~mv2.png" alt="Academix Logo" class="preloader-brand-logo">
+            <span>Academix Portal</span>
+        </div>
+        <div class="preloader-track">
+            <div class="preloader-bar" id="preloader-bar"></div>
+        </div>
+        <div class="preloader-text" id="preloader-text">Loading Experience... 0%</div>
+    </div>
+
     <!-- Header Navigation -->
     <header>
         <div class="container header-container">
@@ -29,151 +41,131 @@
 
     <!-- ==================== HOME TAB ==================== -->
     <main class="page-tab active" id="tab-home">
-        <!-- Hero Section -->
-        <section class="hero hero-centered">
-            <div class="container hero-centered-content">
-                <h1 class="hero-title-large">LET'S LIGHT UP THE KID'S GROTH</h1>
-                <p class="hero-subtitle-large">LEARN IN YOUR OWN WAY</p>
+        <div class="scroll-track" id="track-home">
+            <div class="sticky-container">
+                <canvas class="scroll-canvas" id="canvas-home"></canvas>
+                <div class="content-overlay">
+                    <div class="overlay-step active" data-step="0">
+                        <div class="glass-card">
+                            <p class="sub-heading">Welcome to Academix</p>
+                            <h1>Let's Light Up The Kid's Growth</h1>
+                            <p>Learn in your own way. A premium portal bridging school life and home life.</p>
+                        </div>
+                    </div>
+                    <div class="overlay-step" data-step="1">
+                        <div class="glass-card">
+                            <p class="sub-heading">Empowering Journey</p>
+                            <h2>Track Progress Instantly</h2>
+                            <p>Parents and students get interactive, modern dashboards to track grades, attendance, and fee payments in real time.</p>
+                        </div>
+                    </div>
+                    <div class="overlay-step" data-step="2">
+                        <div class="glass-card">
+                            <p class="sub-heading">Unified Control</p>
+                            <h2>Stay Connected</h2>
+                            <p>Real-time notifications, direct teacher messaging, and automated WhatsApp alerts keep you informed every step of the way.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </section>
+        </div>
     </main>
 
     <!-- ==================== ABOUT / ACADEMICS TAB ==================== -->
     <main class="page-tab" id="tab-academics">
-        <!-- About Our School Portal Section -->
-        <section class="section-padding section-border-bottom">
-            <div class="container text-video-grid">
-                <div class="section-text-content">
-                    <h2 class="section-title text-left">About Our School Portal</h2>
-                    <p class="section-paragraph-large">
-                        Welcome to the future of educational management. Our School Portal is a comprehensive digital ecosystem engineered to bridge the gap between classroom learning, school administration, and home life. We believe that managing a child’s education shouldn't be complicated or fragmented. By bringing academic tracking, school communications, and daily administrative tasks into one unified, intelligent platform, we give parents and students a singular, reliable anchor for their educational journey.
-                    </p>
-                </div>
-                <div class="video-container-wrapper">
-                    <!-- Premium Styled Custom Video Container -->
-                    <div class="video-card">
-                        <video id="about-video" class="premium-video" loop muted playsinline poster="https://static.wixstatic.com/media/2d339c_a363a30931974f11928857d8b0fa8b8a~mv2.jpg">
-                            <source src="https://assets.mixkit.co/videos/preview/mixkit-children-in-school-having-fun-42861-large.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                        <div class="video-overlay" id="about-video-overlay">
-                            <button class="play-btn" onclick="togglePlay('about-video', 'about-video-overlay')">
-                                <span class="play-icon">▶</span>
-                            </button>
+        <div class="scroll-track" id="track-academics">
+            <div class="sticky-container">
+                <canvas class="scroll-canvas" id="canvas-academics"></canvas>
+                <div class="content-overlay">
+                    <div class="overlay-step" data-step="0">
+                        <div class="glass-card">
+                            <p class="sub-heading">About Our Portal</p>
+                            <h2>Future of Management</h2>
+                            <p>Our School Portal is a comprehensive digital ecosystem engineered to bridge the gap between classroom learning, school administration, and home life.</p>
+                        </div>
+                    </div>
+                    <div class="overlay-step" data-step="1">
+                        <div class="glass-card">
+                            <p class="sub-heading">Academic Excellence</p>
+                            <h2>Empowering Students</h2>
+                            <p>We provide students with real-time, interactive dashboards to track their assignments, monitor their progress, and take true ownership of their learning journey.</p>
+                        </div>
+                    </div>
+                    <div class="overlay-step" data-step="2">
+                        <div class="glass-grid-container">
+                            <h2 class="section-title">Academic Resources</h2>
+                            <div class="features-grid">
+                                <div class="feature-card">
+                                    <div class="feature-icon-wrapper"><span>📋</span></div>
+                                    <h3 class="feature-title">Curriculum Guide</h3>
+                                    <p class="feature-desc">Comprehensive overview of the academic year structure and course objectives.</p>
+                                </div>
+                                <div class="feature-card">
+                                    <div class="feature-icon-wrapper"><span>📖</span></div>
+                                    <h3 class="feature-title">Textbook List</h3>
+                                    <p class="feature-desc">Official list of required and recommended reading materials for all grade levels.</p>
+                                </div>
+                                <div class="feature-card">
+                                    <div class="feature-icon-wrapper"><span>💻</span></div>
+                                    <h3 class="feature-title">Online Portal</h3>
+                                    <p class="feature-desc">Direct links to our secure digital learning environment and resource library.</p>
+                                </div>
+                            </div>
+                            <div class="action-container-center" style="margin-top: 2rem; display: flex; justify-content: center;">
+                                <a href="/login.html" class="btn btn-primary btn-download-academics" style="pointer-events: auto;">Download</a>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Empowering Academic Excellence Section -->
-        <section class="section-padding">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">Empowering Academic Excellence</h2>
-                    <p class="section-subtitle">
-                        We provide students with real-time, interactive dashboards to track their assignments, monitor their progress, and take true ownership of their learning journey.
-                    </p>
-                </div>
-                
-                <div class="features-grid">
-                    <!-- Card 1 -->
-                    <div class="feature-card academics-card">
-                        <div class="feature-icon-wrapper">
-                            <span>📋</span>
-                        </div>
-                        <h3 class="feature-title">Curriculum Guide</h3>
-                        <p class="feature-desc">Comprehensive overview of the academic year structure and course objectives.</p>
-                    </div>
-                    <!-- Card 2 -->
-                    <div class="feature-card academics-card">
-                        <div class="feature-icon-wrapper">
-                            <span>📖</span>
-                        </div>
-                        <h3 class="feature-title">Textbook List</h3>
-                        <p class="feature-desc">Official list of required and recommended reading materials for all grade levels.</p>
-                    </div>
-                    <!-- Card 3 -->
-                    <div class="feature-card academics-card">
-                        <div class="feature-icon-wrapper">
-                            <span>💻</span>
-                        </div>
-                        <h3 class="feature-title">Online Portal</h3>
-                        <p class="feature-desc">Direct links to our secure digital learning environment and resource library.</p>
-                    </div>
-                </div>
-
-                <div class="action-container-center">
-                    <a href="/login.html" class="btn btn-primary btn-download-academics">Download</a>
-                </div>
-            </div>
-        </section>
+        </div>
     </main>
 
     <!-- ==================== COMMUNITY TAB ==================== -->
     <main class="page-tab" id="tab-community">
-        <!-- Connecting Minds Section -->
-        <section class="section-padding section-border-bottom">
-            <div class="container text-video-grid">
-                <div class="section-text-content">
-                    <h2 class="section-title text-left">Connecting Minds, Fostering Collaboration</h2>
-                    <p class="section-paragraph-large">
-                        Education doesn’t stop when the school bell rings. Our Community Hub is a vibrant, secure digital space where parents, educators, and students come together to share ideas, coordinate events, and support each other’s growth.
-                    </p>
-                </div>
-                <div class="video-container-wrapper">
-                    <!-- Premium Styled Custom Video Container -->
-                    <div class="video-card">
-                        <video id="community-video" class="premium-video" loop muted playsinline poster="https://static.wixstatic.com/media/2d339c_2e39ef7ac31b42a186e29a4643d59016~mv2.jpg">
-                            <source src="https://assets.mixkit.co/videos/preview/mixkit-teacher-assisting-schoolgirls-in-the-classroom-42867-large.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                        <div class="video-overlay" id="community-video-overlay">
-                            <button class="play-btn" onclick="togglePlay('community-video', 'community-video-overlay')">
-                                <span class="play-icon">▶</span>
-                            </button>
+        <div class="scroll-track" id="track-community">
+            <div class="sticky-container">
+                <canvas class="scroll-canvas" id="canvas-community"></canvas>
+                <div class="content-overlay">
+                    <div class="overlay-step" data-step="0">
+                        <div class="glass-card">
+                            <p class="sub-heading">Community Hub</p>
+                            <h2>Connecting Minds</h2>
+                            <p>Education doesn’t stop when the school bell rings. Our Community Hub is a vibrant, secure digital space where parents, educators, and students collaborate.</p>
+                        </div>
+                    </div>
+                    <div class="overlay-step" data-step="1">
+                        <div class="glass-card">
+                            <p class="sub-heading">Collaborative Growth</p>
+                            <h2>Ecosystem Features</h2>
+                            <p>Connect, collaborate, and grow with our purpose-built digital communication features designed for modern schools.</p>
+                        </div>
+                    </div>
+                    <div class="overlay-step" data-step="2">
+                        <div class="glass-grid-container">
+                            <h2 class="section-title">Ecosystem Features</h2>
+                            <div class="features-grid">
+                                <div class="feature-card">
+                                    <div class="feature-icon-wrapper"><span>💬</span></div>
+                                    <h3 class="feature-title">Discussion Forums</h3>
+                                    <p class="feature-desc">Engage in classroom-specific or school-wide conversations. Safe, organized, and moderated forums.</p>
+                                </div>
+                                <div class="feature-card">
+                                    <div class="feature-icon-wrapper"><span>📅</span></div>
+                                    <h3 class="feature-title">Unified Calendar</h3>
+                                    <p class="feature-desc">From parent-teacher conferences to sports meets and science fairs, stay updated with real-time schedules.</p>
+                                </div>
+                                <div class="feature-card">
+                                    <div class="feature-icon-wrapper"><span>📚</span></div>
+                                    <h3 class="feature-title">Resource Library</h3>
+                                    <p class="feature-desc">Access a centralized vault of crowd-sourced and teacher-approved educational materials.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Core Ecosystem / Features Section -->
-        <section class="section-padding">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">Ecosystem Features</h2>
-                    <p class="section-subtitle">Connect, collaborate, and grow with our purpose-built digital communication features.</p>
-                </div>
-
-                <div class="features-grid">
-                    <!-- Feature 1 -->
-                    <div class="feature-card">
-                        <div class="feature-icon-wrapper">
-                            <span>💬</span>
-                        </div>
-                        <h3 class="feature-title">01 Interactive Discussion Forums</h3>
-                        <p class="feature-desc">Engage in classroom-specific or school-wide conversations. Whether you are a parent discussing upcoming projects or a student collaborating on a study guide, our moderated forums keep communication safe, organized, and productive.</p>
-                    </div>
-                    <!-- Feature 2 -->
-                    <div class="feature-card">
-                        <div class="feature-icon-wrapper">
-                            <span>📅</span>
-                        </div>
-                        <h3 class="feature-title">02 Unified Event Calendar & Scheduling</h3>
-                        <p class="feature-desc">Never miss a beat. From parent-teacher conferences and sports meets to science fairs and cultural festivals, stay updated with real-time schedule changes and sync them instantly to your personal calendar.</p>
-                    </div>
-                    <!-- Feature 3 -->
-                    <div class="feature-card">
-                        <div class="feature-icon-wrapper">
-                            <span>📚</span>
-                        </div>
-                        <h3 class="feature-title">03 Shared Resource Library</h3>
-                        <p class="feature-desc">Access a centralized vault of crowd-sourced and teacher-approved educational materials. Find past newsletters, curriculum guides, study templates, and multimedia learning tools all in one organized space.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
     </main>
 
     <!-- Footer -->
@@ -189,54 +181,312 @@
         </div>
     </footer>
 
-    <!-- Video Play Controller & Tab Switching Controller -->
+    <!-- Dynamic Active State Indicator dot -->
+    <div class="scroll-indicator-bar" id="scroll-indicator-bar"></div>
+
     <script>
+        const sequences = {
+            'tab-home': {
+                path: '/images/seq1/ezgif-frame-',
+                count: 300,
+                images: []
+            },
+            'tab-academics': {
+                path: '/images/seq2/ezgif-frame-',
+                count: 240,
+                images: []
+            },
+            'tab-community': {
+                path: '/images/seq3/ezgif-frame-',
+                count: 240,
+                images: []
+            }
+        };
+
+        let activeTabId = 'tab-home';
+
+        function pad(num, size) {
+            let s = num + "";
+            while (s.length < size) s = "0" + s;
+            return s;
+        }
+
+        async function preloadImagesInBatches(onProgress) {
+            const urls = [];
+            const mapping = [];
+            
+            for (let i = 1; i <= sequences['tab-home'].count; i++) {
+                urls.push(`${sequences['tab-home'].path}${pad(i, 3)}.jpg`);
+                mapping.push({ key: 'tab-home', index: i - 1 });
+            }
+            for (let i = 1; i <= sequences['tab-academics'].count; i++) {
+                urls.push(`${sequences['tab-academics'].path}${pad(i, 3)}.jpg`);
+                mapping.push({ key: 'tab-academics', index: i - 1 });
+            }
+            for (let i = 1; i <= sequences['tab-community'].count; i++) {
+                urls.push(`${sequences['tab-community'].path}${pad(i, 3)}.jpg`);
+                mapping.push({ key: 'tab-community', index: i - 1 });
+            }
+
+            const batchSize = 35;
+            let loadedCount = 0;
+
+            for (let i = 0; i < urls.length; i += batchSize) {
+                const batchUrls = urls.slice(i, i + batchSize);
+                const batchMapping = mapping.slice(i, i + batchSize);
+                
+                await Promise.all(batchUrls.map((url, idx) => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.src = url;
+                        img.onload = () => {
+                            const item = batchMapping[idx];
+                            sequences[item.key].images[item.index] = img;
+                            loadedCount++;
+                            onProgress(loadedCount, urls.length);
+                            resolve();
+                        };
+                        img.onerror = () => {
+                            loadedCount++;
+                            onProgress(loadedCount, urls.length);
+                            resolve();
+                        };
+                    });
+                }));
+            }
+        }
+
+        function drawImageProp(ctx, img, x, y, w, h, offsetX, offsetY) {
+            if (arguments.length === 2) {
+                x = y = 0;
+                w = ctx.canvas.width;
+                h = ctx.canvas.height;
+            }
+            offsetX = typeof offsetX === "number" ? offsetX : 0.5;
+            offsetY = typeof offsetY === "number" ? offsetY : 0.5;
+            if (offsetX < 0) offsetX = 0;
+            if (offsetY < 0) offsetY = 0;
+            if (offsetX > 1) offsetX = 1;
+            if (offsetY > 1) offsetY = 1;
+
+            var iw = img.width,
+                ih = img.height,
+                r = Math.min(w / iw, h / ih),
+                nw = iw * r,
+                nh = ih * r,
+                cx, cy, cw, ch, ar = 1;
+
+            if (nw < w) ar = w / nw;                             
+            if (Math.abs(ar - 1) < 1e-14 && nh < h) ar = h / nh;
+            nw *= ar;
+            nh *= ar;
+
+            cw = iw / (nw / w);
+            ch = ih / (nh / h);
+
+            cx = (iw - cw) * offsetX;
+            cy = (ih - ch) * offsetY;
+
+            if (cx < 0) cx = 0;
+            if (cy < 0) cy = 0;
+            if (cw > iw) cw = iw;
+            if (ch > ih) ch = ih;
+
+            ctx.drawImage(img, cx, cy, cw, ch,  x, y, w, h);
+        }
+
+        function resizeCanvases() {
+            const canvases = ['canvas-home', 'canvas-academics', 'canvas-community'];
+            canvases.forEach(id => {
+                const canvas = document.getElementById(id);
+                if (canvas) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+            });
+            renderCurrentFrame();
+        }
+
+        function renderCurrentFrame() {
+            let canvasId = 'canvas-home';
+            let sequenceKey = 'tab-home';
+            let trackId = 'track-home';
+
+            if (activeTabId === 'tab-academics') {
+                canvasId = 'canvas-academics';
+                sequenceKey = 'tab-academics';
+                trackId = 'track-academics';
+            } else if (activeTabId === 'tab-community') {
+                canvasId = 'canvas-community';
+                sequenceKey = 'tab-community';
+                trackId = 'track-community';
+            }
+
+            const canvas = document.getElementById(canvasId);
+            const track = document.getElementById(trackId);
+            if (!canvas || !track) return;
+
+            const ctx = canvas.getContext('2d');
+            const seq = sequences[sequenceKey];
+            if (!seq || seq.images.length === 0) return;
+
+            const maxScroll = track.scrollHeight - window.innerHeight;
+            if (maxScroll <= 0) {
+                const img = seq.images[0];
+                if (img) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    drawImageProp(ctx, img);
+                }
+                return;
+            }
+
+            const scrollOffset = window.scrollY;
+            const fraction = Math.min(Math.max(scrollOffset / maxScroll, 0), 1);
+            const frameIndex = Math.min(Math.floor(fraction * (seq.count - 1)), seq.count - 1);
+            const img = seq.images[frameIndex];
+            if (img) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawImageProp(ctx, img);
+            }
+        }
+
+        function handleScroll() {
+            let sequenceKey = 'tab-home';
+            let trackId = 'track-home';
+            
+            if (activeTabId === 'tab-academics') {
+                sequenceKey = 'tab-academics';
+                trackId = 'track-academics';
+            } else if (activeTabId === 'tab-community') {
+                sequenceKey = 'tab-community';
+                trackId = 'track-community';
+            }
+
+            const track = document.getElementById(trackId);
+            if (!track) return;
+
+            const maxScroll = track.scrollHeight - window.innerHeight;
+            if (maxScroll <= 0) return;
+
+            const scrollOffset = window.scrollY;
+            const fraction = Math.min(Math.max(scrollOffset / maxScroll, 0), 1);
+
+            renderCurrentFrame();
+
+            const steps = track.querySelectorAll('.overlay-step');
+            const stepCount = steps.length;
+            
+            steps.forEach((step, idx) => {
+                const stepStart = idx / stepCount;
+                const stepEnd = (idx + 1) / stepCount;
+
+                if (fraction >= stepStart && fraction < stepEnd) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+
+            updateScrollDots(fraction, stepCount);
+        }
+
+        function createScrollDots() {
+            const bar = document.getElementById('scroll-indicator-bar');
+            if (!bar) return;
+            bar.innerHTML = '';
+
+            let trackId = 'track-home';
+            if (activeTabId === 'tab-academics') {
+                trackId = 'track-academics';
+            } else if (activeTabId === 'tab-community') {
+                trackId = 'track-community';
+            }
+
+            const track = document.getElementById(trackId);
+            if (!track) return;
+
+            const steps = track.querySelectorAll('.overlay-step');
+            steps.forEach((step, idx) => {
+                const dot = document.createElement('div');
+                dot.className = 'scroll-indicator-dot' + (idx === 0 ? ' active' : '');
+                dot.setAttribute('data-index', idx);
+                
+                dot.addEventListener('click', () => {
+                    const maxScroll = track.scrollHeight - window.innerHeight;
+                    const targetScroll = maxScroll * ((idx + 0.5) / steps.length);
+                    window.scrollTo({
+                        top: targetScroll,
+                        behavior: 'smooth'
+                    });
+                });
+
+                bar.appendChild(dot);
+            });
+        }
+
+        function updateScrollDots(fraction, stepCount) {
+            const dots = document.querySelectorAll('.scroll-indicator-dot');
+            const activeIdx = Math.min(Math.floor(fraction * stepCount), stepCount - 1);
+            dots.forEach((dot, idx) => {
+                if (idx === activeIdx) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        function switchTab(targetId) {
+            activeTabId = targetId;
+            createScrollDots();
+            setTimeout(() => {
+                resizeCanvases();
+                handleScroll();
+            }, 50);
+        }
+
         // Tab switching controller
         document.querySelectorAll('.nav-link').forEach(button => {
             button.addEventListener('click', (event) => {
                 event.preventDefault();
                 
-                // Remove active class from all links
                 document.querySelectorAll('.nav-link').forEach(lnk => lnk.classList.remove('active'));
-                // Add active class to clicked link
                 button.classList.add('active');
                 
-                // Hide all tabs
                 document.querySelectorAll('.page-tab').forEach(tab => tab.classList.remove('active'));
                 
-                // Show target tab
                 const targetId = button.getAttribute('data-target');
                 const targetTab = document.getElementById(targetId);
                 if (targetTab) {
                     targetTab.classList.add('active');
-                    // Scroll to top of body smoothly on page toggle
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                    switchTab(targetId);
                 }
             });
         });
 
-        // Video controller function
-        function togglePlay(videoId, overlayId) {
-            const video = document.getElementById(videoId);
-            const overlay = document.getElementById(overlayId);
-            if (video && overlay) {
-                if (video.paused) {
-                    // Pause all other videos
-                    document.querySelectorAll('video').forEach(v => {
-                        if (v.id !== videoId) {
-                            v.pause();
-                            const otherOverlay = document.getElementById(v.id + '-overlay');
-                            if (otherOverlay) otherOverlay.style.opacity = '1';
-                        }
-                    });
-                    video.play();
-                    overlay.style.opacity = '0';
-                } else {
-                    video.pause();
-                    overlay.style.opacity = '1';
+        // Initialize preloading on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            const bar = document.getElementById('preloader-bar');
+            const text = document.getElementById('preloader-text');
+            const preloader = document.getElementById('preloader');
+
+            preloadImagesInBatches((loaded, total) => {
+                const percent = Math.floor((loaded / total) * 100);
+                if (bar) bar.style.width = `${percent}%`;
+                if (text) text.innerText = `Loading Experience... ${percent}%`;
+            }).then(() => {
+                if (preloader) {
+                    preloader.classList.add('fade-out');
                 }
-            }
-        }
+                resizeCanvases();
+                createScrollDots();
+                handleScroll();
+            });
+
+            window.addEventListener('resize', resizeCanvases);
+            window.addEventListener('scroll', handleScroll, { passive: true });
+        });
     </script>
 
 </body>

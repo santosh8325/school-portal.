@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const role = (currentUser.role || 'student').toLowerCase();
     
     const branding = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ''; el?.classList.remove('skeleton-text'); };
-    branding('briefing-school-name', schoolConfig.name || 'Academix Portal');
+    branding('briefing-school-name', schoolConfig.name || 'ScholaLink');
     branding('briefing-history', schoolConfig.history || schoolConfig.address || 'One Place For Your Child.');
     branding('briefing-achievements', schoolConfig.achievements ? `✨ ${schoolConfig.achievements}` : '');
     branding('user-name', username);

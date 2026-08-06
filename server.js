@@ -672,6 +672,339 @@ app.get('/api/chartfy/audit', requireAuth(['principal']), (req, res) => {
     `, [req.session.schoolId], (err, rows) => res.json(rows || []));
 });
 
+
+// =====================================================================
+// --- UNIFIED ENROLLMENT ENGINE ---
+// =====================================================================
+
+
+// Bulk Enrollment Template Generator
+app.get('/api/enroll/unified/bulk/template', requireAuth(['admin', 'principal', 'staff']), (req, res) => {
+    const headers = [
+        'First_Name', 'Last_Name', 'DOB', 'Gender', 'Target_Grade',
+        'Parent_Name', 'Parent_Phone', 'Parent_Email', 'Emergency_Contact',
+        'Address', 'Previous_School'
+    ];
+    const ws = xlsx.utils.aoa_to_sheet([headers]);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Bulk Enrollment");
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="ScholaLink_Bulk_Enrollment_Template.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+});
+
+// Bulk Enrollment Preview
+app.post('/api/enroll/unified/bulk/preview', requireAuth(['admin', 'principal', 'staff']), upload.single('file'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    try {
+        const workbook = xlsx.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        fs.unlinkSync(req.file.path); // Clean up immediately
+
+        const previewData = rawData.map((row, index) => {
+            const errors = {};
+            const cleanRow = { ...row, _id: index };
+
+            // Required Non-Null Validations (Stage 1)
+            ['First_Name', 'Last_Name', 'DOB', 'Target_Grade', 'Parent_Email'].forEach(field => {
+                if (!row[field]) errors[field] = 'Required field missing';
+            });
+
+            // ISO Date Validation (DOB expected to be readable or parsable date)
+            if (row.DOB) {
+                // If excel serial date, parse to string
+                let dobStr = row.DOB;
+                if (typeof dobStr === 'number') {
+                    dobStr = new Date(Math.round((dobStr - 25569) * 86400 * 1000)).toISOString().split('T')[0];
+                    cleanRow.DOB = dobStr;
+                }
+                const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                if (!isoDateRegex.test(dobStr) && isNaN(Date.parse(dobStr))) {
+                    errors.DOB = 'Invalid Date Format (Expected YYYY-MM-DD)';
+                } else if (!isoDateRegex.test(dobStr) && !isNaN(Date.parse(dobStr))) {
+                    // Try to fix formatting
+                    cleanRow.DOB = new Date(dobStr).toISOString().split('T')[0];
+                }
+            }
+
+            // Email format
+            if (row.Parent_Email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(row.Parent_Email)) {
+                    errors.Parent_Email = 'Invalid Email Format';
+                }
+            }
+
+            return { data: cleanRow, errors: Object.keys(errors).length ? errors : null };
+        });
+
+
+        // Add logical stage 2 validation (check for existing users)
+        // Since this runs inside an async route handler, we use Promise to check DB
+        const finalPreviewData = [];
+        for (const rowObj of previewData) {
+            if (rowObj.errors) {
+                finalPreviewData.push(rowObj);
+                continue;
+            }
+            const record = rowObj.data;
+            const usernameBase = (record.First_Name + '_' + record.Last_Name).toLowerCase().replace(/\s+/g, '');
+
+            const existingStudent = await new Promise((resolve) => {
+                db.get('SELECT id FROM users WHERE role = ? AND REPLACE(LOWER(full_name), \' \', \'\') = ? AND dob = ?', ['student', usernameBase, record.DOB], (err, row) => {
+                    resolve(row);
+                });
+            });
+
+            if (existingStudent) {
+                rowObj.errors = rowObj.errors || {};
+                rowObj.errors.First_Name = 'Duplicate Student Record';
+                rowObj.errors.Last_Name = 'Duplicate Student Record';
+                rowObj.errors.DOB = 'Duplicate Student Record';
+            }
+            finalPreviewData.push(rowObj);
+        }
+
+        res.json({ success: true, preview: finalPreviewData });
+
+    } catch (err) {
+        if(fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ error: 'Error processing upload: ' + err.message });
+    }
+});
+
+// Bulk Enrollment Commit
+app.post('/api/enroll/unified/bulk/commit', requireAuth(['admin', 'principal', 'staff']), async (req, res) => {
+    const { students } = req.body;
+    if (!students || !Array.isArray(students)) return res.status(400).json({ error: 'Invalid students payload' });
+
+    // We will use the existing db module which wraps pg with a transaction abstraction
+    // However, since db.js mimics sqlite and doesn't expose transactions easily, we'll
+    // directly use the pool if available, or simulate transactions using the existing db wrapper.
+    // For safety, let's just use the application's existing db connection methods.
+
+    let successCount = 0;
+    let skippedCount = 0;
+
+    const school_id = req.session.schoolId || 1;
+
+    try {
+        // In this implementation, since db.js emulates SQLite but wraps PG,
+        // we'll run insertions sequentially as the db.run method does not explicitly support transactions
+
+        for (const record of students) {
+            // Logical check (Name + DOB)
+            const usernameBase = (record.First_Name + '_' + record.Last_Name).toLowerCase().replace(/\s+/g, '');
+
+            const existingStudent = await new Promise((resolve) => {
+                db.all('SELECT id FROM users WHERE role = ? AND REPLACE(LOWER(full_name), \' \', \'\') = ? AND dob = ?', ['student', usernameBase, record.DOB], (err, rows) => {
+                    resolve(rows || []);
+                });
+            });
+
+            if (existingStudent.length > 0) {
+                skippedCount++;
+                continue;
+            }
+
+            const year = new Date().getFullYear();
+            const rand = Math.floor(1000 + Math.random() * 9000);
+            const username = `SCH-${year}-${rand}`;
+            const student_password_plain = 'student123';
+            const hashedPw = await bcrypt.hash(student_password_plain, 10);
+            const qrToken = `QR-${Date.now()}-${username}`;
+
+            let parent_id = null;
+            if (record.Parent_Email) {
+                const existingParents = await new Promise(resolve => {
+                    db.all("SELECT id FROM users WHERE email = ? AND role = 'parent'", [record.Parent_Email], (err, rows) => resolve(rows || []));
+                });
+                if (existingParents.length > 0) {
+                    parent_id = existingParents[0].id;
+                } else {
+                    const parent_username = record.Parent_Email.split('@')[0] + rand;
+                    const parent_hashedPw = await bcrypt.hash('parent123', 10);
+                    const parent_qrToken = `QR-${Date.now()}-${parent_username}`;
+                    parent_id = await new Promise((resolve, reject) => {
+                        db.run("INSERT INTO users (username, password, email, phone, role, school_id, qr_token) VALUES (?,?,?,?,?,?,?)",
+                            [parent_username, parent_hashedPw, record.Parent_Email, record.Parent_Phone || null, 'parent', school_id, parent_qrToken],
+                            function(err) { if(err) reject(err); else resolve(this.lastID); }
+                        );
+                    });
+                }
+            }
+
+            const student_id = await new Promise((resolve, reject) => {
+                db.run("INSERT INTO users (username, password, role, class_name, dob, parent_id, school_id, qr_token, full_name) VALUES (?,?,?,?,?,?,?,?,?)",
+                    [username, hashedPw, 'student', record.Target_Grade, record.DOB, parent_id, school_id, qrToken, record.First_Name + ' ' + record.Last_Name],
+                    function(err) { if(err) reject(err); else resolve(this.lastID); }
+                );
+            });
+
+            await new Promise((resolve, reject) => {
+                db.run("INSERT INTO student_profiles (student_id, dob, gender, previous_school) VALUES (?,?,?,?)",
+                    [student_id, record.DOB, record.Gender || 'Other', record.Previous_School || null],
+                    (err) => { if(err) reject(err); else resolve(); }
+                );
+            });
+
+            if (parent_id) {
+                await new Promise((resolve, reject) => {
+                    db.run("INSERT INTO guardian_profiles (user_id, student_id, full_name, email, mobile_number, address_street) VALUES (?,?,?,?,?,?)",
+                        [parent_id, student_id, record.Parent_Name || 'Guardian', record.Parent_Email, record.Parent_Phone, record.Address || ''],
+                        (err) => { if(err) reject(err); else resolve(); }
+                    );
+                });
+            }
+
+            // Financial init
+            const dueDate = new Date();
+            dueDate.setMonth(dueDate.getMonth() + 1);
+            const isoDueDate = dueDate.toISOString().split('T')[0];
+            await new Promise((resolve, reject) => {
+                db.run("INSERT INTO fees (student_id, amount, status, due_date) VALUES (?,?,?,?)",
+                    [student_id, 1500.00, 'Pending', isoDueDate],
+                    (err) => { if(err) reject(err); else resolve(); }
+                );
+            });
+
+            successCount++;
+        }
+
+        res.json({ success: true, successCount, skippedCount });
+    } catch (e) {
+        res.status(500).json({ error: 'Bulk insertion failed: ' + e.message });
+    }
+});
+
+app.post('/api/enroll/unified/single', upload.array('documents'), async (req, res) => {
+    try {
+        const payload = JSON.parse(req.body.payload);
+        const {
+            // Step 1
+            student_first_name, student_last_name, dob, gender, blood_group, nationality, primary_language,
+            target_grade, previous_school, last_grade_passed, transfer_certificate_number,
+            // Step 2
+            guardian_type, guardian_first_name, guardian_last_name, relationship, occupation, email, mobile_number,
+            address_street, address_city, address_zip,
+            // Step 3
+            allergies, chronic_conditions, emergency_medical_auth, sen_notes, signature
+        } = payload;
+
+        // Auto-assign ID SCH-2026-XXXX
+        const year = new Date().getFullYear();
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        const username = `SCH-${year}-${rand}`;
+        const student_password_plain = 'student123';
+        const hashedPw = await bcrypt.hash(student_password_plain, 10);
+        const qrToken = `QR-${Date.now()}-${username}`;
+        const full_name = `${student_first_name} ${student_last_name}`;
+
+        let parent_id = null;
+        let school_id = 1; // Defaulting to 1 for this portal
+        if (req.session && req.session.schoolId) {
+            school_id = req.session.schoolId;
+        }
+
+        // Parent Mapping
+        if (email) {
+            const existingParent = await new Promise((resolve, reject) => {
+                db.get("SELECT id FROM users WHERE email = ? AND role = 'parent'", [email], (err, row) => {
+                    if (err) reject(err); else resolve(row);
+                });
+            });
+
+            if (existingParent) {
+                parent_id = existingParent.id;
+            } else {
+                // Create parent account
+                const parent_username = email.split('@')[0] + rand;
+                const parent_hashedPw = await bcrypt.hash('parent123', 10);
+                const parent_qrToken = `QR-${Date.now()}-${parent_username}`;
+                parent_id = await new Promise((resolve, reject) => {
+                    db.run("INSERT INTO users (username, password, email, phone, role, school_id, qr_token) VALUES (?,?,?,?,?,?,?)",
+                        [parent_username, parent_hashedPw, email, mobile_number, 'parent', school_id, parent_qrToken],
+                        function(err) {
+                            if (err) reject(err); else resolve(this.lastID);
+                        }
+                    );
+                });
+            }
+        }
+
+        // Create Student Account
+        const student_id = await new Promise((resolve, reject) => {
+            db.run("INSERT INTO users (username, password, role, class_name, dob, parent_id, school_id, qr_token, full_name) VALUES (?,?,?,?,?,?,?,?,?)",
+                [username, hashedPw, 'student', target_grade, dob, parent_id, school_id, qrToken, full_name],
+                function(err) {
+                    if (err) reject(err); else resolve(this.lastID);
+                }
+            );
+        });
+
+        // Insert Student Profile
+        await new Promise((resolve, reject) => {
+            db.run(`INSERT INTO student_profiles (student_id, dob, gender, blood_group, nationality, primary_language, previous_school, last_grade_passed, transfer_certificate_number, allergies, chronic_conditions, emergency_medical_auth, sen_notes)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                [student_id, dob, gender, blood_group, nationality, primary_language, previous_school, last_grade_passed, transfer_certificate_number, allergies, chronic_conditions, emergency_medical_auth ? 1 : 0, sen_notes],
+                (err) => { if (err) reject(err); else resolve(); }
+            );
+        });
+
+        // Insert Guardian Profile
+        if (parent_id) {
+            await new Promise((resolve, reject) => {
+                db.run(`INSERT INTO guardian_profiles (user_id, student_id, guardian_type, full_name, relationship, occupation, email, mobile_number, address_street, address_city, address_zip)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+                    [parent_id, student_id, guardian_type || 'primary', `${guardian_first_name} ${guardian_last_name}`, relationship, occupation, email, mobile_number, address_street, address_city, address_zip],
+                    (err) => { if (err) reject(err); else resolve(); }
+                );
+            });
+        }
+
+// Financial Initialization
+        const dueDate = new Date();
+        dueDate.setMonth(dueDate.getMonth() + 1);
+        const isoDueDate = dueDate.toISOString().split('T')[0];
+
+        await new Promise((resolve, reject) => {
+            db.run("INSERT INTO fees (student_id, amount, status, due_date) VALUES (?,?,?,?)",
+                [student_id, 1500.00, 'Pending', isoDueDate],
+                (err) => { if (err) reject(err); else resolve(); }
+            );
+        });
+
+        // Store Documents
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                await new Promise((resolve, reject) => {
+                    db.run("INSERT INTO enrollment_documents (student_id, doc_type, file_path) VALUES (?,?,?)",
+                        [student_id, 'uploaded_doc', file.path],
+                        (err) => { if (err) reject(err); else resolve(); }
+                    );
+                });
+            }
+        }
+
+        // Store Signature
+        if (signature) {
+             await new Promise((resolve, reject) => {
+                db.run("INSERT INTO enrollment_documents (student_id, doc_type, file_path) VALUES (?,?,?)",
+                    [student_id, 'signature', signature.substring(0, 50) + '... (base64 truncated for db footprint)'],
+                    (err) => { if (err) reject(err); else resolve(); }
+                );
+            });
+        }
+
+        res.json({ success: true, reference_id: username, message: 'Student successfully enrolled.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // =====================================================================
 // --- ENROLLMENT REQUEST SYSTEM ---
 // =====================================================================

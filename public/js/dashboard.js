@@ -241,6 +241,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'enrollManage':
                     viewContainer.innerHTML = `
                     <h2>➕ Enrollment Management</h2>
+
+                    <div class="card" style="margin-bottom: 20px; border-left: 4px solid #F77F00; background: #fff8f0;">
+                        <h3 style="color: #F77F00;">🚀 Unified Enrollment Module</h3>
+                        <p style="color:#555;">Use the new Unified Enrollment Portal to process single multi-step applications and mass Excel uploads with in-grid validation.</p>
+                        <button onclick="window.location.href='/enroll.html'" style="padding:10px 15px; background:#F77F00; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer; margin-top:10px;">
+                            Launch Enrollment Portal ➔
+                        </button>
+                    </div>
+
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start;">
                         <!-- LEFT: Direct Enroll -->
                         <div class="card">

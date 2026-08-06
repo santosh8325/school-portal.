@@ -179,6 +179,7 @@ async function initializeSchema() {
             phone TEXT,
             role TEXT,
             class_name TEXT,
+            dob DATE,
             parent_id INTEGER,
             school_id INTEGER REFERENCES schools(id),
             qr_token TEXT,
@@ -327,7 +328,47 @@ async function initializeSchema() {
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
 
-        await client.query(`CREATE TABLE IF NOT EXISTS enrollment_requests (
+
+        await client.query(`CREATE TABLE IF NOT EXISTS student_profiles (
+            id SERIAL PRIMARY KEY,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            dob DATE,
+            gender TEXT,
+            blood_group TEXT,
+            nationality TEXT,
+            primary_language TEXT,
+            previous_school TEXT,
+            last_grade_passed TEXT,
+            transfer_certificate_number TEXT,
+            allergies TEXT,
+            chronic_conditions TEXT,
+            emergency_medical_auth BOOLEAN DEFAULT FALSE,
+            sen_notes TEXT
+        )`);
+
+        await client.query(`CREATE TABLE IF NOT EXISTS guardian_profiles (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- Parent/guardian user account
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            guardian_type TEXT, -- 'primary' or 'secondary'
+            full_name TEXT,
+            relationship TEXT,
+            occupation TEXT,
+            email TEXT,
+            mobile_number TEXT,
+            address_street TEXT,
+            address_city TEXT,
+            address_zip TEXT
+        )`);
+
+        await client.query(`CREATE TABLE IF NOT EXISTS enrollment_documents (
+            id SERIAL PRIMARY KEY,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            doc_type TEXT, -- 'birth_certificate', 'report_card', 'transfer_certificate', 'government_id'
+            file_path TEXT,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+await client.query(`CREATE TABLE IF NOT EXISTS enrollment_requests (
             id SERIAL PRIMARY KEY,
             school_id INTEGER REFERENCES schools(id) ON DELETE CASCADE,
             requested_by INTEGER REFERENCES users(id) ON DELETE CASCADE,

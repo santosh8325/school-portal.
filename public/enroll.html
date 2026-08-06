@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Student Enrollment Module</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --slate-navy: #1B263B;
+            --white: #FFFFFF;
+            --vibrant-teal: #00B4D8;
+            --energetic-orange: #F77F00;
+            --light-orange: #FFD166;
+            --light-red: #EF476F;
+            --bg-gray: #F4F5F7;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-gray);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--slate-navy);
+            color: var(--white);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: #E2E8F0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background-color: var(--white);
+            color: var(--vibrant-teal);
+            border-bottom: 3px solid var(--vibrant-teal);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .btn-primary {
+            background-color: var(--energetic-orange);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #E07300;
+        }
+
+        .btn-secondary {
+            background-color: var(--vibrant-teal);
+            color: var(--white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="date"], input[type="email"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .wizard-step { display: none; }
+        .wizard-step.active { display: block; }
+
+        .wizard-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        #preview-grid {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        #preview-grid th, #preview-grid td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #preview-grid th {
+            background-color: var(--slate-navy);
+            color: var(--white);
+        }
+        .error-cell {
+            background-color: var(--light-red) !important;
+            color: var(--white);
+            position: relative;
+        }
+
+        .dropzone {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 40px;
+            text-align: center;
+            background: #fafafa;
+            cursor: pointer;
+        }
+
+        #signature-pad {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            height: 200px;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ScholaLink Enrollment Portal</h1>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" id="tab-single" onclick="switchTab('single')">Single Application Form</div>
+            <div class="tab" id="tab-bulk" onclick="switchTab('bulk')">Bulk Batch Upload</div>
+        </div>
+
+        <!-- MODULE A: Single Student Admissions Wizard -->
+        <div id="content-single" class="tab-content active">
+            <form id="single-enrollment-form">
+                <div class="wizard-step active" id="step-1">
+                    <h3>Step 1: Student Demographics</h3>
+                    <input type="text" id="s_first_name" placeholder="First Name" required>
+                    <input type="text" id="s_last_name" placeholder="Last Name" required>
+                    <label>DOB (YYYY-MM-DD):</label>
+                    <input type="date" id="s_dob" required>
+                    <select id="s_gender">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="text" id="s_blood_group" placeholder="Blood Group">
+                    <input type="text" id="s_nationality" placeholder="Nationality">
+                    <input type="text" id="s_primary_language" placeholder="Primary Language">
+                    <select id="s_target_grade" required>
+                        <option value="">Select Target Grade...</option>
+                        <option value="10-A">10-A (5 Seats Available)</option>
+                        <option value="9-B">9-B (12 Seats Available)</option>
+                    </select>
+                    <input type="text" id="s_prev_school" placeholder="Previous School Name">
+                    <input type="text" id="s_last_grade" placeholder="Last Grade Passed">
+                    <input type="text" id="s_tc_number" placeholder="Transfer Certificate (TC) Number">
+
+                    <div class="wizard-nav">
+                        <div></div>
+                        <button type="button" class="btn-secondary" onclick="nextStep(2)">Next</button>
+                    </div>
+                </div>
+
+                <div class="wizard-step" id="step-2">
+                    <h3>Step 2: Parent & Guardian Details</h3>
+                    <select id="g_type"><option value="primary">Primary Guardian</option><option value="secondary">Secondary Guardian</option></select>
+                    <input type="text" id="g_first_name" placeholder="First Name" required>
+                    <input type="text" id="g_last_name" placeholder="Last Name" required>
+                    <input type="text" id="g_relationship" placeholder="Relationship">
+                    <input type="text" id="g_occupation" placeholder="Occupation">
+                    <input type="email" id="g_email" placeholder="Email Address" required>
+                    <input type="text" id="g_mobile" placeholder="Mobile Number (+1...)">
+                    <input type="text" id="g_street" placeholder="Street Address">
+                    <input type="text" id="g_city" placeholder="City">
+                    <input type="text" id="g_zip" placeholder="Zip/Postal Code">
+
+                    <div class="wizard-nav">
+                        <button type="button" class="btn-secondary" onclick="nextStep(1)">Back</button>
+                        <button type="button" class="btn-secondary" onclick="nextStep(3)">Next</button>
+                    </div>
+                </div>
+
+                <div class="wizard-step" id="step-3">
+                    <h3>Step 3: Medical & Special Requirements</h3>
+                    <textarea id="m_allergies" placeholder="Allergies (if any)"></textarea>
+                    <textarea id="m_chronic" placeholder="Chronic Conditions"></textarea>
+                    <label><input type="checkbox" id="m_auth"> Emergency Medical Authorization</label>
+                    <textarea id="m_sen" placeholder="Special Educational Needs (SEN) notes"></textarea>
+
+                    <div class="wizard-nav">
+                        <button type="button" class="btn-secondary" onclick="nextStep(2)">Back</button>
+                        <button type="button" class="btn-secondary" onclick="nextStep(4)">Next</button>
+                    </div>
+                </div>
+
+                <div class="wizard-step" id="step-4">
+                    <h3>Step 4: Verification File Vault</h3>
+                    <div class="dropzone" id="file-dropzone">
+                        Drag and drop PDF/JPEG files here (Max 5MB)<br>
+                        (Birth Certificate, Report Card, TC, Gov ID)
+                        <input type="file" id="file-upload" multiple style="display:none;">
+                    </div>
+                    <ul id="file-list" style="margin-top:10px;"></ul>
+
+                    <div class="wizard-nav">
+                        <button type="button" class="btn-secondary" onclick="nextStep(3)">Back</button>
+                        <button type="button" class="btn-secondary" onclick="nextStep(5)">Next</button>
+                    </div>
+                </div>
+
+                <div class="wizard-step" id="step-5">
+                    <h3>Step 5: Review & Digital Signature</h3>
+                    <div id="review-card" style="background:#f9f9f9; padding:15px; border-radius:4px; margin-bottom:15px;">
+                        <!-- Populated via JS -->
+                    </div>
+                    <label><input type="checkbox" id="terms_accept" required> I accept the Terms & Conditions</label>
+                    <div style="margin-top: 15px;">
+                        <label>Digital Signature</label>
+                        <canvas id="signature-pad"></canvas>
+                        <button type="button" onclick="clearSignature()" style="font-size:0.8rem; margin-top:5px;">Clear Signature</button>
+                    </div>
+
+                    <div class="wizard-nav">
+                        <button type="button" class="btn-secondary" onclick="nextStep(4)">Back</button>
+                        <button type="submit" class="btn-primary" id="btn-submit-single">Submit Application</button>
+                    </div>
+                </div>
+            </form>
+            <div id="single-result-msg" style="margin-top:15px; font-weight:bold;"></div>
+        </div>
+
+        <!-- MODULE B: Mass Student Onboarding Engine -->
+        <div id="content-bulk" class="tab-content">
+            <h3>Batch Processing Pipeline</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn-secondary" onclick="window.location.href='/api/enroll/unified/bulk/template'">📥 Download Template</button>
+            </div>
+            <div class="dropzone" id="bulk-dropzone">
+                Drag and drop CSV/XLSX file here (Max 20MB)
+                <input type="file" id="bulk-upload" accept=".csv, .xlsx, .xls" style="display:none;">
+            </div>
+
+            <div id="preview-container" style="display:none;">
+                <h4>Interactive Preview Grid</h4>
+                <p style="font-size: 0.85rem; color: #666;">Double-click on any highlighted cell to edit and fix errors before committing.</p>
+                <div style="overflow-x: auto;">
+                    <table id="preview-grid">
+                        <thead>
+                            <tr id="preview-headers"></tr>
+                        </thead>
+                        <tbody id="preview-body"></tbody>
+                    </table>
+                </div>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn-primary" id="btn-commit-bulk">Process Bulk Enrollment</button>
+                </div>
+            </div>
+            <div id="bulk-result-msg" style="margin-top:15px; font-weight:bold;"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="/js/enroll.js"></script>
+</body>
+</html>
